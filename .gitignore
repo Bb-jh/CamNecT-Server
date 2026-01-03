@@ -37,8 +37,8 @@ out/
 .vscode/
 
 ### Environment files ###
-#.env
-#.env.*
+.env
+.env.*
 !.env.example
 
 ### Docker local volumes / data ###
