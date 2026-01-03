@@ -38,7 +38,7 @@ public class JwtUtil {
 
     private String generateToken(String username, TokenType type, long expirationMs) {
         Instant now = Instant.now();
-        Instant exp = now.plusSeconds(expirationMs);
+        Instant exp = now.plusMillis(expirationMs);
 
         return Jwts.builder()
                 .header().type("JWT").and()
