@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.global.repository;
+package CamNecT.CamNecT_Server.global.common.repository;
 
 import CamNecT.CamNecT_Server.global.common.model.UserProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
