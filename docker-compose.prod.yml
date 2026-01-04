@@ -3,6 +3,8 @@ services:
     image: mysql:8.0
     container_name: camnect-mysql
     restart: always
+    env_file:
+      - .env
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASS}
       MYSQL_DATABASE: ${DB_NAME}
@@ -13,18 +15,23 @@ services:
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASS}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: prod
+    image: ${DOCKER_USERNAME}/camnect-server:latest
     container_name: camnect-server
     restart: always
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=utf8
@@ -33,3 +40,4 @@ services:
 
 volumes:
   db_data:
+
