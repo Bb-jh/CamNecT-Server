@@ -26,7 +26,6 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 테스트는 초기엔 스킵 (원하면 나중에 test 단계 추가 가능)
       - name: Build with Gradle
         run: ./gradlew build -x test
 
@@ -36,13 +35,11 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # ✅ GitHub Actions에서 이미지 빌드 후 Docker Hub로 push (prod target 사용)
       - name: Build and Push Docker Image
         run: |
           docker build --target prod -t ${{ secrets.DOCKER_USERNAME }}/campus-server:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/campus-server:latest
 
-      # ✅ 서버 폴더 준비 + .env 생성(Secrets 기반)
       - name: Prepare directory and write .env on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -63,7 +60,6 @@ jobs:
 
             chmod 600 /home/${{ secrets.USERNAME }}/campus-project/.env
 
-      # ✅ 레포의 docker-compose.prod.yml을 서버로 업로드
       - name: Upload docker-compose.prod.yml to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -74,7 +70,6 @@ jobs:
           target: "/home/${{ secrets.USERNAME }}/campus-project/"
           overwrite: true
 
-      # ✅ 업로드된 compose로 pull/up
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
