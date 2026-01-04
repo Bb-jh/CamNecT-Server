@@ -1,18 +1,17 @@
 # syntax=docker/dockerfile:1.6
 
-FROM gradle:8.7-jdk21 AS builder
+FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /build
 
-COPY build.gradle settings.gradle /build/
-
-# Gradle 캐시 사용 (BuildKit)
-RUN --mount=type=cache,target=/home/gradle/.gradle \
-    gradle dependencies --no-daemon > /dev/null 2>&1 || true \
+# Gradle wrapper + 설정 먼저 (캐시 효율)
+COPY gradlew build.gradle settings.gradle /build/
+COPY gradle /build/gradle
+RUN chmod +x /build/gradlew
 
 COPY src /build/src
 
-RUN --mount=type=cache,target=/home/gradle/.gradle \
-    gradle bootJar -x test --no-daemon
+RUN --mount=type=cache,target=/root/.gradle \
+    /build/gradlew bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre AS prod
 WORKDIR /app
@@ -21,7 +20,6 @@ COPY --from=builder /build/build/libs/*.jar app.jar
 
 ENV TZ=Asia/Seoul
 
-EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "app.jar"]
+
 
