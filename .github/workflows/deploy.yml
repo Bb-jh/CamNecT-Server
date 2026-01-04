@@ -37,8 +37,8 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build --target prod -t ${{ secrets.DOCKER_USERNAME }}/campus-server:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/campus-server:latest
+          docker build --target prod -t ${{ secrets.DOCKER_USERNAME }}/camnect-server:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/camnect-server:latest
 
       - name: Prepare directory and write .env on EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -48,9 +48,9 @@ jobs:
           key: ${{ secrets.KEY }}
           script: |
             set -e
-            mkdir -p /home/${{ secrets.USERNAME }}/campus-project
+            mkdir -p /home/${{ secrets.USERNAME }}/camnect-project
 
-            cat > /home/${{ secrets.USERNAME }}/campus-project/.env << 'EOF'
+            cat > /home/${{ secrets.USERNAME }}/camnect-project/.env << 'EOF'
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             DB_NAME=${{ secrets.DB_NAME }}
             MYSQL_ROOT_PASS=${{ secrets.MYSQL_ROOT_PASS }}
@@ -58,7 +58,7 @@ jobs:
             MYSQL_USER_PASS=${{ secrets.MYSQL_USER_PASS }}
             EOF
 
-            chmod 600 /home/${{ secrets.USERNAME }}/campus-project/.env
+            chmod 600 /home/${{ secrets.USERNAME }}/camnect-project/.env
 
       - name: Upload docker-compose.prod.yml to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -67,7 +67,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           source: "docker-compose.prod.yml"
-          target: "/home/${{ secrets.USERNAME }}/campus-project/"
+          target: "/home/${{ secrets.USERNAME }}/camnect-project/"
           overwrite: true
 
       - name: Deploy to EC2
@@ -78,7 +78,7 @@ jobs:
           key: ${{ secrets.KEY }}
           script: |
             set -e
-            cd /home/${{ secrets.USERNAME }}/campus-project
+            cd /home/${{ secrets.USERNAME }}/camnect-project
 
             if command -v docker-compose >/dev/null 2>&1; then
               DC="docker-compose"
