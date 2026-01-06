@@ -1,6 +1,6 @@
 package CamNecT.CamNecT_Server.domain.auth.entity;
 
-import CamNecT.CamNecT_Server.domain.Users.model.Users;
+import CamNecT.CamNecT_Server.domain.users.model.Users;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
