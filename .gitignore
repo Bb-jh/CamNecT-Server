@@ -39,7 +39,6 @@ out/
 ### Environment files ###
 .env
 .env.*
-!.env.example
 
 ### Docker local volumes / data ###
 db_data/
