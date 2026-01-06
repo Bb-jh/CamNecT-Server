@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.domain.Users.model;
+package CamNecT.CamNecT_Server.domain.users.model;
 
 import CamNecT.CamNecT_Server.domain.model.Institutions;
 import CamNecT.CamNecT_Server.domain.model.Majors;

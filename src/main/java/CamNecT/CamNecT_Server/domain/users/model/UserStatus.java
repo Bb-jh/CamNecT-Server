@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.domain.Users.model;
+package CamNecT.CamNecT_Server.domain.users.model;
 
 public enum UserStatus {
     EMAIL_PENDING,

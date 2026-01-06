@@ -1,10 +1,9 @@
-package CamNecT.CamNecT_Server.domain.Users.model;
+package CamNecT.CamNecT_Server.domain.users.model;
 
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import CamNecT.CamNecT_Server.domain.Users.*;
 
 import java.time.LocalDateTime;
 
