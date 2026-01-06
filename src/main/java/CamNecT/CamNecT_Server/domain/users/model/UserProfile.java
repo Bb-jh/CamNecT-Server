@@ -1,5 +1,7 @@
-package CamNecT.CamNecT_Server.global.common.model;
+package CamNecT.CamNecT_Server.domain.users.model;
 
+import CamNecT.CamNecT_Server.domain.model.Institutions;
+import CamNecT.CamNecT_Server.domain.model.Majors;
 import jakarta.persistence.*;
 import lombok.*;
 

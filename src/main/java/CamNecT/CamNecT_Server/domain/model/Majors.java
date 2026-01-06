@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.global.common.model;
+package CamNecT.CamNecT_Server.domain.model;
 
 import jakarta.persistence.*;
 import lombok.*;
