@@ -1,43 +1,12 @@
 services:
-  db:
-    image: mysql:8.0
-    container_name: camnect-mysql
-    restart: always
-    env_file:
-      - .env
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASS}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${MYSQL_USER_NAME}
-      MYSQL_PASSWORD: ${MYSQL_USER_PASS}
-    volumes:
-      - db_data:/var/lib/mysql
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASS}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   app:
     image: ${DOCKER_USERNAME}/camnect-server:latest
     container_name: camnect-server
     restart: always
     ports:
       - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
     env_file:
-      - .env
+      - .env.prod
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=utf8
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER_NAME}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_USER_PASS}
-
-volumes:
-  db_data:
-
+        SPRING_PROFILES_ACTIVE: prod
+        JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70.0

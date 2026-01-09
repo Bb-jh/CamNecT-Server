@@ -20,17 +20,30 @@ public class Users {
     @Column(name = "user_id")
     private Long userId;
 
+    //실질적 아이디라고 생각하시면 됩니다. -> 간단화해서 이메일을 아이디처럼..?
+    @Column(name = "username", nullable = false, unique = true, length = 50)
+    private String username;
+
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
+    //일단 수집
     @Column(name = "phone_num", length = 20, unique = true)
     private String phoneNum;
 
     @Column(name = "email", length = 255, unique = true)
     private String email;
+
+    @Builder.Default //약관 동의1
+    @Column(name = "terms_service_agreed", nullable = false)
+    private boolean termsServiceAgreed = false;
+
+    @Builder.Default //약관 동의2
+    @Column(name = "terms_privacy_agreed", nullable = false)
+    private boolean termsPrivacyAgreed = false;
 
     @Builder.Default
     @Column(name = "email_verified", nullable = false)
@@ -54,8 +67,8 @@ public class Users {
         this.passwordHash = passwordHash;
     }
 
-    public void markEmailVerified(boolean emailVerified) {
-        this.emailVerified = emailVerified;
+    public void markEmailVerified() {
+        this.emailVerified = true;
     }
 
     public void changeStatus(UserStatus newStatus) {
