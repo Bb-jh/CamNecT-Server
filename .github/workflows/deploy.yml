@@ -39,25 +39,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Prepare directory and write .env on EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.KEY }}
-          script: |
-            set -e
-            mkdir -p /home/${{ secrets.USERNAME }}/camnect-project
-
-            cat > /home/${{ secrets.USERNAME }}/camnect-project/.env << 'EOF'
-            DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
-            DB_NAME=${{ secrets.DB_NAME }}
-            MYSQL_ROOT_PASS=${{ secrets.MYSQL_ROOT_PASS }}
-            MYSQL_USER_NAME=${{ secrets.MYSQL_USER_NAME }}
-            MYSQL_USER_PASS=${{ secrets.MYSQL_USER_PASS }}
-            EOF
-
-            chmod 600 /home/${{ secrets.USERNAME }}/camnect-project/.env
 
       - name: Upload docker-compose.prod.yml to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -78,12 +59,19 @@ jobs:
           script: |
             set -e
             cd /home/${{ secrets.USERNAME }}/camnect-project
+            
+            test -f .env.prod || (echo "[ERROR] .env.prod not found in camnect-project" && exit 1)
 
+            export DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}"
+          
             if command -v docker-compose >/dev/null 2>&1; then
               DC="docker-compose"
             else
               DC="docker compose"
             fi
+            
+            echo "${{ secrets.DOCKER_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
 
             sudo $DC -f docker-compose.prod.yml pull
             sudo $DC -f docker-compose.prod.yml up -d --remove-orphans
