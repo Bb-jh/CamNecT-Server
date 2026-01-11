@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.global.common.mail;
+package CamNecT.CamNecT_Server.global.mail;
 
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;

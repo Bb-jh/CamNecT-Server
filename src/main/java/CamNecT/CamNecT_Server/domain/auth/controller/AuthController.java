@@ -41,13 +41,4 @@ public class AuthController {
     public SignupResponse signup(@RequestBody @Valid SignupRequest req) {
         return signupService.signup(req);
     }
-
-    @GetMapping("/email/verify")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void verify(@RequestParam("token") String token) {
-        signupService.verifyEmail(token);
-    }
-
-    //TODO : email 재인증(토큰 재발급)등 api 추가 필요성 보임.
-
 }
