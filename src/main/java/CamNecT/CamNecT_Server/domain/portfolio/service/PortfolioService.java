@@ -1,7 +1,6 @@
 package CamNecT.CamNecT_Server.domain.portfolio.service;
 
 import CamNecT.CamNecT_Server.domain.portfolio.dto.response.PortfolioPreviewResponse;
-import CamNecT.CamNecT_Server.domain.portfolio.dto.response.PortfolioResponse;
 import CamNecT.CamNecT_Server.domain.portfolio.repository.PortfolioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
