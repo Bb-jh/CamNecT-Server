@@ -1,8 +1,8 @@
-package CamNecT.CamNecT_Server.domain.portfolio.dto;
+package CamNecT.CamNecT_Server.domain.portfolio.dto.response;
 
 import java.time.LocalDateTime;
 
-public record PortfolioPreviewDTO(
+public record PortfolioPreviewResponse(
         Long portfolioId,
         String title,
         String thumbnailUrl,

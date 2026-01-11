@@ -50,7 +50,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String getUsername(String token) {
+    public String getUserId(String token) {
         return Jwts.parser().verifyWith(key).build()
                 .parseSignedClaims(token)
                 .getPayload().getSubject();
