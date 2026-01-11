@@ -27,7 +27,7 @@ public class AuthController {
     /*
     * 아래는 회원가입 관련 API입니다.
     * 구현 : POST:/signup=회원가입(정보입력), GET:/email/verify=이메일인증전송,
-    * 미구현 : GET:/email/resend=이메일재전송(토큰만료등 상황시)
+    * 미구현 : GET:/email/resend=이메일재전송(토큰만료등 상황시),
     * 추가로 약관동의등에서 약관을 서버가 가지고 있는다면
     * GET: /terms, POST: /terms/agree 등 추가 가능성 있음.
     * */
