@@ -3,6 +3,8 @@ services:
     image: ${DOCKER_USERNAME}/camnect-server:latest
     container_name: camnect-server
     restart: always
+    volumes:
+      - /mnt/ebs/verifications:/var/app/uploads/verifications
     ports:
       - "8080:8080"
     env_file:
