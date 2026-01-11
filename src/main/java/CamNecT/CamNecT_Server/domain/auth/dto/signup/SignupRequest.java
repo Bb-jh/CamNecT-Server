@@ -9,7 +9,7 @@ public record SignupRequest (
     @NotBlank String username, //실질적 아이디
     @NotBlank String password,
     @NotBlank String name,
-            String phoneNum,
+    @NotBlank String phoneNum,
     @NotNull Agreements agreements
 ){
     public record Agreements(

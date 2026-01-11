@@ -1,11 +1,10 @@
-package CamNecT.CamNecT_Server.domain.auth.util;
+package CamNecT.CamNecT_Server.global.jwt;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
-import java.util.UUID;
 
 public class TokenUtil {
 

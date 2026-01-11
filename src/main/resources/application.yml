@@ -2,7 +2,7 @@ app:
   auth:
     email-verification:
       expiration-minutes: 30
-      verify-base-url: ${VERIFY_BASE_URL:http://localhost:8080/api/v1/auth/email/verify}
+      verify-base-url: ${VERIFY_BASE_URL:http://localhost:8080/api/auth/email/verify}
 
 spring:
   application:
