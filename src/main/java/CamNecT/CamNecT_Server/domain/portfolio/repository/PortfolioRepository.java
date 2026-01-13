@@ -5,9 +5,11 @@ import CamNecT.CamNecT_Server.domain.portfolio.model.PortfolioProject;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface PortfolioRepository extends JpaRepository<PortfolioProject, Long> {
 
     @Query("SELECT new CamNecT.CamNecT_Server.domain.portfolio.dto.response.PortfolioPreviewResponse(p.portfolioId, p.title, p.thumbnailUrl, p.updatedAt) " +

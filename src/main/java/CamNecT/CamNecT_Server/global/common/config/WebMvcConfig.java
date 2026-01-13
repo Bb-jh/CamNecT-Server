@@ -22,10 +22,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
         resolvers.add(userIdArgumentResolver);
     }
 
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(authInterceptor)
-                .addPathPatterns("/**") // 모든 API에 인증 적용
-                .excludePathPatterns("/api/v1/auth");
-    }
+//    @Override
+//    public void addInterceptors(InterceptorRegistry registry) {
+//        registry.addInterceptor(authInterceptor)
+//                .addPathPatterns("/**") // 모든 API에 인증 적용
+//                .excludePathPatterns("/api/v1/auth")
+//                .excludePathPatterns("/swagger")
+//        ;
+//    }
 }
