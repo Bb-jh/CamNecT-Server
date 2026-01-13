@@ -56,7 +56,7 @@ public class DocumentVerificationService {
         for (MultipartFile file : documents) {
             validateFile(file);
 
-            String storageKey = fileStorage.save(props.getStorageDir(), file);
+            String storageKey = fileStorage.save(String.valueOf(userId), file);
 
             DocumentVerificationFile vf = DocumentVerificationFile.builder()
                     .originalFilename(safeName(file.getOriginalFilename()))
