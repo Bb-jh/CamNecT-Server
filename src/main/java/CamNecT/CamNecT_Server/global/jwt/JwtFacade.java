@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.domain.auth.service;
+package CamNecT.CamNecT_Server.global.jwt;
 
 import CamNecT.CamNecT_Server.domain.users.model.Users;
 

@@ -1,6 +1,6 @@
-package CamNecT.CamNecT_Server.domain.auth.repository;
+package CamNecT.CamNecT_Server.domain.verification.email.repository;
 
-import CamNecT.CamNecT_Server.domain.auth.entity.EmailVerificationToken;
+import CamNecT.CamNecT_Server.domain.verification.email.model.EmailVerificationToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

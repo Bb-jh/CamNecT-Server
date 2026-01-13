@@ -1,0 +1,21 @@
+package CamNecT.CamNecT_Server.domain.verification.document.Repository;
+
+import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationSubmission;
+import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface DocumentVerificationSubmissionRepository extends JpaRepository<DocumentVerificationSubmission, Long> {
+
+    boolean existsByUserIdAndStatus(Long userId, VerificationStatus status);
+
+    List<DocumentVerificationSubmission> findByUserIdOrderBySubmittedAtDesc(Long userId);
+
+    Optional<DocumentVerificationSubmission> findByIdAndUserId(Long id, Long userId);
+
+    Page<DocumentVerificationSubmission> findByStatusOrderBySubmittedAtDesc(VerificationStatus status, Pageable pageable);
+}

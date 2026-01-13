@@ -25,14 +25,14 @@ public class Institutions {
     @Column(name = "institution_name_kor", nullable = false, length = 100)
     private String institutionNameKor;
 
-    @Column(name = "institutiton_name_eng", nullable = false, length = 100)
+    @Column(name = "institution_name_eng", nullable = false, length = 100)
     private String institutionNameEng;
 
     @Column(name = "sort_order", nullable = false)
-    private Integer sortOrder;
+    private Integer sortOrder = 0;
 
     @Column(name = "is_active", nullable = false)
-    private Boolean isActive;
+    private Boolean isActive = true;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

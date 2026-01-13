@@ -2,13 +2,13 @@ package CamNecT.CamNecT_Server.domain.auth.service;
 
 import CamNecT.CamNecT_Server.domain.auth.dto.signup.SignupRequest;
 import CamNecT.CamNecT_Server.domain.auth.dto.signup.SignupResponse;
-import CamNecT.CamNecT_Server.domain.auth.entity.EmailVerificationToken;
-import CamNecT.CamNecT_Server.domain.auth.repository.EmailVerificationTokenRepository;
-import CamNecT.CamNecT_Server.domain.auth.util.TokenUtil;
+import CamNecT.CamNecT_Server.domain.verification.email.model.EmailVerificationToken;
+import CamNecT.CamNecT_Server.domain.verification.email.repository.EmailVerificationTokenRepository;
+import CamNecT.CamNecT_Server.global.jwt.TokenUtil;
 import CamNecT.CamNecT_Server.domain.users.model.UserStatus;
 import CamNecT.CamNecT_Server.domain.users.model.Users;
 import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
-import CamNecT.CamNecT_Server.global.common.mail.EmailSender;
+import CamNecT.CamNecT_Server.global.mail.EmailSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -57,8 +57,8 @@ public class SignupService {
                 .name(req.name())
                 .phoneNum(req.phoneNum())
                 .passwordHash(passwordEncoder.encode(req.password()))
-                .termsServiceAgreed(req.agreements().serviceTerms())
-                .termsPrivacyAgreed(req.agreements().privacyTerms())
+                .termsServiceAgreed(true)
+                .termsPrivacyAgreed(true)
                 .emailVerified(false)
                 .status(UserStatus.EMAIL_PENDING)
                 .build();

@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.domain.auth.entity;
+package CamNecT.CamNecT_Server.domain.verification.email.model;
 
 import CamNecT.CamNecT_Server.domain.users.model.Users;
 import jakarta.persistence.*;
