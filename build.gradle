@@ -46,6 +46,10 @@ dependencies {
     // Swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15'
 
+    //S3
+    implementation platform("software.amazon.awssdk:bom:2.41.5")
+    implementation "software.amazon.awssdk:s3"
+
     //h2
     runtimeOnly 'com.h2database:h2'
     testRuntimeOnly 'com.h2database:h2'
