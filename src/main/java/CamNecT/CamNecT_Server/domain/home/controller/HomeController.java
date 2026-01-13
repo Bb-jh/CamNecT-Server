@@ -1,0 +1,25 @@
+package CamNecT.CamNecT_Server.domain.home.controller;
+
+import CamNecT.CamNecT_Server.domain.home.dto.HomeResponse;
+import CamNecT.CamNecT_Server.domain.home.service.HomeService;
+import CamNecT.CamNecT_Server.global.common.response.ApiResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/home")
+public class HomeController {
+
+    private final HomeService homeService;
+
+    @GetMapping
+    public ApiResponse<HomeResponse> home(
+            @RequestHeader("X-Device-Id") String deviceId
+    ) {
+        return ApiResponse.success(homeService.getHome(deviceId));
+    }
+}
