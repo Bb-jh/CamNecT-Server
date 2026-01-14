@@ -1,6 +1,6 @@
 package CamNecT.CamNecT_Server.domain.users.model;
 
-import CamNecT.CamNecT_Server.domain.model.Tags;
+import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,10 +20,10 @@ public class InterestTagMap {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tag_id", nullable = false)
-    private Tags tag;
+    private Tag tag;
 
     @Builder
-    public InterestTagMap(Interests interest, Tags tag) {
+    public InterestTagMap(Interests interest, Tag tag) {
         this.interest = interest;
         this.tag = tag;
     }
