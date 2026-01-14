@@ -1,5 +1,6 @@
-package CamNecT.CamNecT_Server.domain.community.model;
+package CamNecT.CamNecT_Server.domain.community.model.Posts;
 
+import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@ToString
 public class PostTags {
 
     @Id
@@ -31,10 +33,12 @@ public class PostTags {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "post_id", nullable = false)
+    @ToString.Exclude
     private Posts post;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "tag_id", nullable = false)
+    @ToString.Exclude
     private Tag tag;
 
     @CreationTimestamp

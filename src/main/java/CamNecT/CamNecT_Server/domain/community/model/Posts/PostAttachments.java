@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.domain.community.model;
+package CamNecT.CamNecT_Server.domain.community.model.Posts;
 
 import jakarta.persistence.*;
 import lombok.*;
