@@ -16,12 +16,9 @@ public interface PostsRepository extends JpaRepository<Posts, Long> {
     // =========================
     // Feed (cursor pagination)
     // =========================
-
-    // ALL 탭: 최신순
     Slice<Posts> findByStatusOrderByIdDesc(PostStatus status, Pageable pageable);
     Slice<Posts> findByStatusAndIdLessThanOrderByIdDesc(PostStatus status, Long cursorId, Pageable pageable);
 
-    // INFO / QUESTION 탭: 게시판 필터 + 최신순
     Slice<Posts> findByStatusAndBoard_CodeOrderByIdDesc(PostStatus status, BoardCode code, Pageable pageable);
     Slice<Posts> findByStatusAndBoard_CodeAndIdLessThanOrderByIdDesc(PostStatus status, BoardCode code, Long cursorId, Pageable pageable);
 
@@ -31,33 +28,69 @@ public interface PostsRepository extends JpaRepository<Posts, Long> {
     List<Posts> findTop5ByStatusOrderByIdDesc(PostStatus status);
     List<Posts> findTop5ByStatusAndBoard_CodeOrderByIdDesc(PostStatus status, BoardCode code);
 
+
     // =========================
     // Waiting Questions (답변대기)
-    // commentCount == 0 기준 (Posts에 commentCount 컬럼 있어야 함)
+    // PostStats.commentCount == 0
     // =========================
-    List<Posts> findTop3ByStatusAndBoard_CodeAndCommentCountOrderByIdDesc(
-            PostStatus status, BoardCode code, long commentCount
+    @Query("""
+        select p
+        from Posts p
+        join PostStats ps on ps.post = p
+        where p.status = :status
+          and p.board.code = :code
+          and ps.commentCount = 0
+        order by p.id desc
+    """)
+    List<Posts> findTop3Waiting(
+            @Param("status") PostStatus status,
+            @Param("code") BoardCode code,
+            Pageable pageable   // PageRequest.of(0,3)로 제한
     );
 
     // =========================
     // Popular/Hot (인기글/추천글)
-    // Posts에 hotScore 컬럼이 있을 때 사용
-    // =========================
-    List<Posts> findTop5ByStatusOrderByHotScoreDescIdDesc(PostStatus status);
-    List<Posts> findTop5ByStatusAndBoard_CodeOrderByHotScoreDescIdDesc(PostStatus status, BoardCode code);
-
-    // =========================
-    // Tag-based recommendation (태그별 추천)
-    // PostTags(조인엔티티), Tag가 있어야 함
-    // Posts에 hotScore 컬럼이 있을 때 사용
+    // PostStats.hotScore 기준
     // =========================
     @Query("""
-        select p from Posts p
-          join PostTags pt on pt.post = p
-          join Tag t on pt.tag = t
-         where p.status = :status
-           and t.name = :tagName
-         order by p.hotScore desc, p.id desc
+        select p
+        from Posts p
+        join PostStats ps on ps.post = p
+        where p.status = :status
+        order by ps.hotScore desc, p.id desc
+    """)
+    List<Posts> findTopHot(
+            @Param("status") PostStatus status,
+            Pageable pageable   // PageRequest.of(0,5)
+    );
+
+    @Query("""
+        select p
+        from Posts p
+        join PostStats ps on ps.post = p
+        where p.status = :status
+          and p.board.code = :code
+        order by ps.hotScore desc, p.id desc
+    """)
+    List<Posts> findTopHotByBoard(
+            @Param("status") PostStatus status,
+            @Param("code") BoardCode code,
+            Pageable pageable
+    );
+
+    // =========================
+    // Tag-based recommendation
+    // PostStats.hotScore 기준
+    // =========================
+    @Query("""
+        select p
+        from Posts p
+        join PostStats ps on ps.post = p
+        join PostTags pt on pt.post = p
+        join pt.tag t
+        where p.status = :status
+          and t.name = :tagName
+        order by ps.hotScore desc, p.id desc
     """)
     Slice<Posts> findHotByTagName(
             @Param("status") PostStatus status,
@@ -66,13 +99,15 @@ public interface PostsRepository extends JpaRepository<Posts, Long> {
     );
 
     @Query("""
-        select p from Posts p
-          join PostTags pt on pt.post = p
-          join Tag t on pt.tag = t
-         where p.status = :status
-           and t.name = :tagName
-           and p.id < :cursorId
-         order by p.hotScore desc, p.id desc
+        select p
+        from Posts p
+        join PostStats ps on ps.post = p
+        join PostTags pt on pt.post = p
+        join pt.tag t
+        where p.status = :status
+          and t.name = :tagName
+          and p.id < :cursorId
+        order by ps.hotScore desc, p.id desc
     """)
     Slice<Posts> findHotByTagNameAfterCursor(
             @Param("status") PostStatus status,
