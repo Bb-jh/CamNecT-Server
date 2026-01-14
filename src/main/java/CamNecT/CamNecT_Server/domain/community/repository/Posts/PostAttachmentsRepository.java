@@ -1,6 +1,6 @@
-package CamNecT.CamNecT_Server.domain.community.repository;
+package CamNecT.CamNecT_Server.domain.community.repository.Posts;
 
-import CamNecT.CamNecT_Server.domain.community.model.PostAttachments;
+import CamNecT.CamNecT_Server.domain.community.model.Posts.PostAttachments;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
