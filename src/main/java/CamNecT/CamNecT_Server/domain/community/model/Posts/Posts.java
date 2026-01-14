@@ -1,5 +1,6 @@
-package CamNecT.CamNecT_Server.domain.community.model;
+package CamNecT.CamNecT_Server.domain.community.model.Posts;
 
+import CamNecT.CamNecT_Server.domain.community.model.Boards;
 import CamNecT.CamNecT_Server.domain.community.model.enums.PostStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,34 +22,26 @@ public class Posts {
     @Column(name = "post_id")
     private Long id;
 
-    // board_id (FK)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "board_id", nullable = false)
     private Boards board;
 
-    // user_id (지금은 User 도메인 없으면 Long으로 두는 것도 OK)
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    // varchar(200)
     @Column(name = "title", nullable = false, length = 200)
     private String title;
 
-    // text (ERD가 context라면 그대로 매핑)
     @Lob
     @Column(name = "context", nullable = false)
     private String content;
 
-    // tinyint(1) default 0
     @Column(name = "is_anonymous", nullable = false)
     private boolean isAnonymous;
 
-    // varchar(20)
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private PostStatus status;
-
-    @Column(name = "hot_score", nullable = false)
-    private long hotScore;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -69,17 +62,18 @@ public class Posts {
                 .content(content)
                 .isAnonymous(isAnonymous)
                 .status(PostStatus.PUBLISHED)
-                .hotScore(0L)
                 .build();
     }
 
-    public void hide() {
-        this.status = PostStatus.HIDDEN;
+    public void update(String title, String content, Boolean isAnonymous) {
+        if (title != null) this.title = title;
+        if (content != null) this.content = content;
+        if (isAnonymous != null) this.isAnonymous = isAnonymous;
     }
 
-    public void publish() {
-        this.status = PostStatus.PUBLISHED;
-    }
+    public void hide() { this.status = PostStatus.HIDDEN; }
+
+    public void publish() { this.status = PostStatus.PUBLISHED; }
 
     public void deleteSoft() {
         this.status = PostStatus.DELETED;

@@ -1,6 +1,6 @@
-package CamNecT.CamNecT_Server.domain.community.repository;
+package CamNecT.CamNecT_Server.domain.community.repository.Posts;
 
-import CamNecT.CamNecT_Server.domain.community.model.Posts;
+import CamNecT.CamNecT_Server.domain.community.model.Posts.Posts;
 import CamNecT.CamNecT_Server.domain.community.model.enums.BoardCode;
 import CamNecT.CamNecT_Server.domain.community.model.enums.PostStatus;
 import org.springframework.data.domain.Pageable;
