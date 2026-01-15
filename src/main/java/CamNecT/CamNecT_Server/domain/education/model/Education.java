@@ -1,11 +1,14 @@
-package CamNecT.CamNecT_Server.global.tag.model;
+package CamNecT.CamNecT_Server.domain.education.model;
 
 import CamNecT.CamNecT_Server.domain.users.model.Users;
+import CamNecT.CamNecT_Server.global.tag.model.Institutions;
+import CamNecT.CamNecT_Server.global.tag.model.Majors;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
 
+// 학력
 @Entity
 @Table(name = "Education")
 @Getter

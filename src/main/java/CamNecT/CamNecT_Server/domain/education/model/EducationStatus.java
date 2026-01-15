@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.global.tag.model;
+package CamNecT.CamNecT_Server.domain.education.model;
 
 public enum EducationStatus {
     ATTENDING("재학"),
