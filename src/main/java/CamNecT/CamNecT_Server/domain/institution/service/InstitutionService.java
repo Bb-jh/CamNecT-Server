@@ -3,7 +3,7 @@ package CamNecT.CamNecT_Server.domain.institution.service;
 import CamNecT.CamNecT_Server.domain.institution.dto.response.InstitutionListResponse;
 import CamNecT.CamNecT_Server.domain.institution.dto.response.InstitutionResponse;
 import CamNecT.CamNecT_Server.domain.institution.repository.InstitutionRepository;
-import CamNecT.CamNecT_Server.domain.model.Institutions;
+import CamNecT.CamNecT_Server.global.tag.model.Institutions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

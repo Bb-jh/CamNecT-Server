@@ -1,37 +1,36 @@
-package CamNecT.CamNecT_Server.domain.model;
+package CamNecT.CamNecT_Server.global.tag.model;
 
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Colleges")
+@Table(name = "Majors")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Colleges {
+public class Majors {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "college_id")
-    private Long collegeId;
+    @Column(name = "major_id")
+    private Long majorId;
 
-    @ManyToOne(fetch = FetchType.LAZY) // 지연 로딩 적용
-    @JoinColumn(name = "institution_id", nullable = false)
-    private Institutions institution;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "college_id", nullable = false)
+    private Colleges college;
 
-    @Column(name = "college_code", nullable = false, length = 100)
-    private String collegeCode;
+    @Column(name = "major_code", nullable = false, length = 100)
+    private String majorCode;
 
-    @Column(name = "college_name_kor", nullable = false, length = 100)
-    private String collegeNameKor;
+    @Column(name = "major_name_kor", nullable = false, length = 100)
+    private String majorNameKor;
 
-    @Column(name = "college_name_eng", nullable = false, length = 100)
-    private String collegeNameEng;
+    @Column(name = "major_name_eng", nullable = false, length = 100)
+    private String majorNameEng;
 
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;

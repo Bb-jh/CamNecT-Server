@@ -1,7 +1,7 @@
 package CamNecT.CamNecT_Server.domain.users.model;
 
-import CamNecT.CamNecT_Server.domain.model.Institutions;
-import CamNecT.CamNecT_Server.domain.model.Majors;
+import CamNecT.CamNecT_Server.global.tag.model.Institutions;
+import CamNecT.CamNecT_Server.global.tag.model.Majors;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -38,11 +38,9 @@ public class UserProfile {
     @Column(name = "year_level", nullable = false)
     private Integer yearLevel;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "institution_id", nullable = false)
-    private Institutions institution;
+    @Column(name = "institution_id", nullable = false)
+    private Long institutionId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "major_id", nullable = false)
-    private Majors major;
+    @Column(name = "major_id", nullable = false)
+    private Long majorId;
 }

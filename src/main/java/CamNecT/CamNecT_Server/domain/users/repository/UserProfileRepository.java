@@ -10,12 +10,15 @@ import java.util.Optional;
 @Repository
 public interface UserProfileRepository extends JpaRepository<UserProfile, Long> {
 
-    //UserProfile에 연관된 정보를 미리 로딩하는 쿼리
-    @Query("SELECT up FROM UserProfile up " +
-            "JOIN FETCH up.user " +
-            "JOIN FETCH up.institution " +
-            "JOIN FETCH up.major m " +
-            "JOIN FETCH m.college " +
-            "WHERE up.userId = :userId")
-    Optional<UserProfile> findProfileWithAllDetails(@Param("userId") Long userId);
+//    //UserProfile에 연관된 정보를 미리 로딩하는 쿼리
+//    @Query("SELECT up FROM UserProfile up " +
+//            "JOIN FETCH up.user " +
+//            "JOIN FETCH up.institution " +
+//            "JOIN FETCH up.major m " +
+//            "JOIN FETCH m.college " +
+//            "WHERE up.userId = :userId")
+//    Optional<UserProfile> findProfileWithAllDetails(@Param("userId") Long userId);
+
+    //userId에 해당하는 프로필 조회
+    Optional<UserProfile> findByUserId(Long userId);
 }
