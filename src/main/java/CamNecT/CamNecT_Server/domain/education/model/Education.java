@@ -49,4 +49,16 @@ public class Education {
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+
+    public void updateEducation(Institutions institution, Majors major, String degree,
+                                LocalDate startDate, LocalDate endDate,
+                                EducationStatus status, String description) {
+        this.institution = institution;
+        this.major = major;
+        this.degree = degree;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.status = status;
+        this.description = description;
+    }
 }
