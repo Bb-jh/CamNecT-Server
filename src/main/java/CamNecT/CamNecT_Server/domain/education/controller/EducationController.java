@@ -1,6 +1,7 @@
 package CamNecT.CamNecT_Server.domain.education.controller;
 
 import CamNecT.CamNecT_Server.domain.education.dto.request.EducationRequest;
+import CamNecT.CamNecT_Server.domain.education.dto.response.EducationResponse;
 import CamNecT.CamNecT_Server.domain.education.service.EducationService;
 import CamNecT.CamNecT_Server.domain.users.model.CustomUserDetails;
 import CamNecT.CamNecT_Server.global.common.response.ApiResponse;
@@ -8,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/institutions")
@@ -15,6 +17,15 @@ import org.springframework.web.bind.annotation.*;
 public class EducationController {
 
     private final EducationService educationService;
+
+    // 학력 조회
+    @GetMapping
+    public ApiResponse<List<EducationResponse>> getMyEducations(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        List<EducationResponse> response = educationService.getMyEducations(userDetails.getUserId());
+        return ApiResponse.success(response);
+    }
 
     // 학력 추가
     @PostMapping
