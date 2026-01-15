@@ -1,5 +1,6 @@
 package CamNecT.CamNecT_Server.domain.profile.dto.response;
 
+import CamNecT.CamNecT_Server.domain.education.dto.response.EducationResponse;
 import CamNecT.CamNecT_Server.domain.portfolio.dto.response.PortfolioPreviewResponse;
 import CamNecT.CamNecT_Server.domain.users.model.UserProfile;
 import CamNecT.CamNecT_Server.global.tag.model.Certificate;
@@ -14,6 +15,7 @@ public record ProfileResponse(
     Integer following,
     Integer follower,
     List<PortfolioPreviewResponse> portfolioProjectList,
+    List<EducationResponse> educations,
     List<Experience> experience,
     List<Certificate> certificate,
     List<Tag> tags
