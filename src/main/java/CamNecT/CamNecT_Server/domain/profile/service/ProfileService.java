@@ -1,5 +1,7 @@
 package CamNecT.CamNecT_Server.domain.profile.service;
 
+import CamNecT.CamNecT_Server.domain.education.dto.response.EducationResponse;
+import CamNecT.CamNecT_Server.domain.education.repository.EducationRepository;
 import CamNecT.CamNecT_Server.domain.portfolio.dto.response.PortfolioPreviewResponse;
 import CamNecT.CamNecT_Server.domain.portfolio.repository.PortfolioRepository;
 import CamNecT.CamNecT_Server.domain.profile.dto.response.ProfileResponse;
@@ -32,6 +34,7 @@ public class ProfileService {
     private final UserFollowRepository userFollowRepository;
     private final PortfolioRepository portfolioRepository;
     private final UserTagMapRepository userTagMapRepository;
+    private final EducationRepository educationRepository;
 
 
     public ProfileResponse getUserProfile(Long profileUserId) {
@@ -44,6 +47,10 @@ public class ProfileService {
 
         List<PortfolioPreviewResponse> portfolioPreviewResponses = portfolioRepository.findPreviewsByUserId(profileUserId);
 
+        List<EducationResponse> educationResponses = educationRepository.findAllByUserIdWithDetails(profileUserId)
+                .stream()
+                .map(EducationResponse::from)
+                .toList();
         List<Experience> experienceList = experienceRepository.findAllByUserId(profileUserId);
         List<Certificate> certificateList = certificateRepository.findAllByUserId(profileUserId);
 
@@ -57,6 +64,7 @@ public class ProfileService {
                 following,
                 follower,
                 portfolioPreviewResponses,
+                educationResponses,
                 experienceList,
                 certificateList,
                 tagList
