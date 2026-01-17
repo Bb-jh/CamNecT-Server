@@ -10,7 +10,10 @@ import java.time.LocalDateTime;
 @Table(
         name = "post_attachments",
         indexes = {
-                @Index(name = "idx_post_attach_post_status_id", columnList = "post_id,status,attachment_id")
+                @Index(
+                        name = "idx_post_attach_post_status_sort",
+                        columnList = "post_id,status,sort_order,attachment_id"
+                )
         }
 )
 @Getter
@@ -43,15 +46,12 @@ public class PostAttachments {
     @Column(name = "file_size")
     private Long fileSize;
 
-    /**
-     * ERD: status(active/deleted)
-     * 여기서는 boolean으로:
-     *  - true  = active
-     *  - false = deleted
-     */
     @Builder.Default
     @Column(name = "status", nullable = false)
     private boolean status = true;
+
+    @Column(name = "sort_order", nullable = false)
+    private int sortOrder;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -63,7 +63,8 @@ public class PostAttachments {
             String thumbnailUrl,
             Integer width,
             Integer height,
-            Long fileSize
+            Long fileSize,
+            int sortOrder
     ) {
         return PostAttachments.builder()
                 .post(post)
@@ -73,6 +74,7 @@ public class PostAttachments {
                 .height(height)
                 .fileSize(fileSize)
                 .status(true)
+                .sortOrder(sortOrder)
                 .build();
     }
 
