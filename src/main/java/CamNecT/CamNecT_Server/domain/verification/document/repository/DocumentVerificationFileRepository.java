@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.domain.verification.document.Repository;
+package CamNecT.CamNecT_Server.domain.verification.document.repository;
 
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationFile;
 import org.springframework.data.jpa.repository.JpaRepository;
