@@ -25,4 +25,9 @@ public class NotificationService {
                 Notification.of(receiverUserId, actorUserId, type, message, postId, commentId)
         );
     }
+
+    @Transactional(readOnly = true)
+    public long countUnread(Long receiverUserId) {
+        return notificationRepository.countByReceiverUserIdAndReadFalse(receiverUserId);
+    }
 }
