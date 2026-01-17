@@ -8,5 +8,6 @@ public record UpdatePostRequest(
         @Size(max = 200) String title,
         String content,
         Boolean anonymous,
-        List<Long> tagIds
+        List<Long> tagIds,
+        List<AttachmentRequest> attachments
 ) {}

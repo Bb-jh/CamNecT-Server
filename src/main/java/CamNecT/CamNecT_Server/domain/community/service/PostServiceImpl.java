@@ -5,6 +5,7 @@ import CamNecT.CamNecT_Server.domain.community.dto.request.UpdatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.response.CreatePostResponse;
 import CamNecT.CamNecT_Server.domain.community.dto.response.PostDetailResponse;
 import CamNecT.CamNecT_Server.domain.community.dto.response.ToggleLikeResponse;
+import CamNecT.CamNecT_Server.domain.community.event.CommentAcceptedEvent;
 import CamNecT.CamNecT_Server.domain.community.model.*;
 import CamNecT.CamNecT_Server.domain.community.model.Comments.AcceptedComments;
 import CamNecT.CamNecT_Server.domain.community.model.Comments.Comments;
@@ -17,13 +18,11 @@ import CamNecT.CamNecT_Server.domain.community.model.enums.PostStatus;
 import CamNecT.CamNecT_Server.domain.community.repository.*;
 import CamNecT.CamNecT_Server.domain.community.repository.Comments.AcceptedCommentsRepository;
 import CamNecT.CamNecT_Server.domain.community.repository.Comments.CommentsRepository;
-import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostLikesRepository;
-import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostStatsRepository;
-import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostTagsRepository;
-import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostsRepository;
+import CamNecT.CamNecT_Server.domain.community.repository.Posts.*;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import CamNecT.CamNecT_Server.global.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +45,11 @@ public class PostServiceImpl implements PostService {
     private final CommentsRepository commentsRepository;
     private final AcceptedCommentsRepository acceptedCommentsRepository;
 
+    private final PostAttachmentsRepository postAttachmentsRepository;
+    private final PostAttachmentsService postAttachmentsService;
+
+    private final ApplicationEventPublisher eventPublisher;
+
     @Transactional
     @Override
     public CreatePostResponse create(Long userId, CreatePostRequest req) {
@@ -63,6 +67,9 @@ public class PostServiceImpl implements PostService {
 
         // 태그 연결
         replaceTags(saved, req.tagIds());
+
+        //첨부
+        postAttachmentsService.replace(saved, req.attachments());
 
         // 첨부는 PostAttachmentsService로 분리하거나, 기존 로직이 있으면 여기서 호출
         return new CreatePostResponse(saved.getId());
@@ -88,6 +95,11 @@ public class PostServiceImpl implements PostService {
             replaceTags(post, req.tagIds());
         }
 
+        // 첨부 "요청이 들어온 경우만"
+        if (req.attachments() != null) {
+            postAttachmentsService.replace(post, req.attachments());
+        }
+
         touchStats(postId);
     }
 
@@ -104,6 +116,8 @@ public class PostServiceImpl implements PostService {
         }
 
         post.deleteSoft();
+
+        postAttachmentsRepository.softDeleteByPostId(postId);
 
         // 연관 테이블 정리(필요한 것만)
         postTagsRepository.deleteByPost_Id(postId);
@@ -201,6 +215,13 @@ public class PostServiceImpl implements PostService {
 
         acceptedCommentsRepository.save(AcceptedComments.of(post, comment, userId));
         touchStats(postId);
+
+        Long receiverId = comment.getUserId(); // 프로젝트에 맞게 comment.getUser().getId()일 수도 있음
+        if (receiverId != null && !Objects.equals(receiverId, userId)) {
+            eventPublisher.publishEvent(new CommentAcceptedEvent(
+                    receiverId, postId, commentId, userId
+            ));
+        }
     }
 
     // -------------------
