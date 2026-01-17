@@ -5,6 +5,7 @@ import CamNecT.CamNecT_Server.domain.community.dto.request.UpdatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.response.CreatePostResponse;
 import CamNecT.CamNecT_Server.domain.community.dto.response.PostDetailResponse;
 import CamNecT.CamNecT_Server.domain.community.dto.response.ToggleLikeResponse;
+import CamNecT.CamNecT_Server.domain.community.event.CommentAcceptedEvent;
 import CamNecT.CamNecT_Server.domain.community.model.*;
 import CamNecT.CamNecT_Server.domain.community.model.Comments.AcceptedComments;
 import CamNecT.CamNecT_Server.domain.community.model.Comments.Comments;
@@ -24,6 +25,7 @@ import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostsRepository;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import CamNecT.CamNecT_Server.global.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,8 @@ public class PostServiceImpl implements PostService {
 
     private final CommentsRepository commentsRepository;
     private final AcceptedCommentsRepository acceptedCommentsRepository;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     @Override
@@ -201,6 +205,13 @@ public class PostServiceImpl implements PostService {
 
         acceptedCommentsRepository.save(AcceptedComments.of(post, comment, userId));
         touchStats(postId);
+
+        Long receiverId = comment.getUserId(); // 프로젝트에 맞게 comment.getUser().getId()일 수도 있음
+        if (receiverId != null && !Objects.equals(receiverId, userId)) {
+            eventPublisher.publishEvent(new CommentAcceptedEvent(
+                    receiverId, postId, commentId, userId
+            ));
+        }
     }
 
     // -------------------
