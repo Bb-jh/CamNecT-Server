@@ -3,6 +3,7 @@ package CamNecT.CamNecT_Server.domain.community.service;
 import CamNecT.CamNecT_Server.domain.community.dto.request.CreatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.request.UpdatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.response.CreatePostResponse;
+import CamNecT.CamNecT_Server.domain.community.dto.response.PostDetailResponse;
 import CamNecT.CamNecT_Server.domain.community.dto.response.ToggleLikeResponse;
 import CamNecT.CamNecT_Server.domain.community.model.*;
 import CamNecT.CamNecT_Server.domain.community.model.Comments.AcceptedComments;
@@ -12,6 +13,7 @@ import CamNecT.CamNecT_Server.domain.community.model.Posts.PostStats;
 import CamNecT.CamNecT_Server.domain.community.model.Posts.PostTags;
 import CamNecT.CamNecT_Server.domain.community.model.Posts.Posts;
 import CamNecT.CamNecT_Server.domain.community.model.enums.BoardCode;
+import CamNecT.CamNecT_Server.domain.community.model.enums.PostStatus;
 import CamNecT.CamNecT_Server.domain.community.repository.*;
 import CamNecT.CamNecT_Server.domain.community.repository.Comments.AcceptedCommentsRepository;
 import CamNecT.CamNecT_Server.domain.community.repository.Comments.CommentsRepository;
@@ -132,14 +134,42 @@ public class PostServiceImpl implements PostService {
         return new ToggleLikeResponse(liked, stats.getLikeCount());
     }
 
-    @Transactional
-    @Override
-    public void increaseView(Long postId) {
+    public PostDetailResponse getDetail(Long userId, Long postId) {
+
         Posts post = postsRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("post not found: " + postId));
 
+        if (post.getStatus() != PostStatus.PUBLISHED) {
+            throw new IllegalArgumentException("post not published");
+        }
+
         PostStats stats = getOrCreateStats(post);
         stats.incView();
+
+        boolean likedByMe = (userId != null) &&
+                postLikesRepository.existsByPost_IdAndUserId(postId, userId);
+
+        List<Long> tagIds = postTagsRepository.findByPost_Id(postId).stream()
+                .map(pt -> pt.getTag().getId())
+                .toList();
+
+        Long acceptedCommentId = acceptedCommentsRepository.findByPost_Id(postId)
+                .map(ac -> ac.getComment().getId())
+                .orElse(null);
+
+        return new PostDetailResponse(
+                post.getId(),
+                post.getBoard().getCode(),
+                post.getTitle(),
+                post.getContent(),
+                post.isAnonymous(),
+                post.getUserId(),
+                stats.getViewCount(),
+                stats.getLikeCount(),
+                likedByMe,
+                acceptedCommentId,
+                tagIds
+        );
     }
 
     @Transactional

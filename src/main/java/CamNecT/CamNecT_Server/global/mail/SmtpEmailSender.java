@@ -2,6 +2,7 @@ package CamNecT.CamNecT_Server.global.mail;
 
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -11,6 +12,7 @@ import org.springframework.util.StringUtils;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class SmtpEmailSender implements EmailSender {
 
     private final JavaMailSender mailSender;
@@ -52,6 +54,7 @@ public class SmtpEmailSender implements EmailSender {
                 <div>...%s...</div>
                 """.formatted(verifyUrl);
 
+            log.info("[mail] send verification to={} url={}", toEmail, verifyUrl);
             helper.setText(text, html); //html 우선. html이 안되는 환경이면 text
             mailSender.send(mimeMessage);
         } catch (MessagingException | MailException e) {
