@@ -56,7 +56,7 @@ public class ProfileService {
         List<ExperienceResponse> experienceList = experienceRepository.findAllByUserIdOrderByStartDateDesc(profileUserId).stream()
                 .map(ExperienceResponse::from)
                 .toList();
-        List<CertificateResponse> certificateList = certificateRepository.findAllByUserIdOrderByStartDateDesc(profileUserId).stream()
+        List<CertificateResponse> certificateList = certificateRepository.findAllByUserIdOrderByAcquiredDateDesc(profileUserId).stream()
                 .map(CertificateResponse::from)
                 .toList();
         ;
