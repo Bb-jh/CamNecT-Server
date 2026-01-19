@@ -6,17 +6,20 @@ import CamNecT.CamNecT_Server.domain.institution.repository.InstitutionRepositor
 import CamNecT.CamNecT_Server.global.tag.model.Institutions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class InstitutionService {
 
     private final InstitutionRepository institutionRepository;
 
     public InstitutionListResponse getInstitutions() {
         List<InstitutionResponse> items =
-                institutionRepository.findAll().stream()
+                institutionRepository.findAllByOrderByNameAsc().stream()
                         .map(InstitutionResponse::from)
                         .toList();
 
