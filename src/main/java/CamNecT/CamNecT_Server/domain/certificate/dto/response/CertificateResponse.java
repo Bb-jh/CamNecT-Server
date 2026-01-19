@@ -5,7 +5,7 @@ import CamNecT.CamNecT_Server.domain.certificate.model.Certificate;
 import java.time.LocalDate;
 
 public record CertificateResponse(
-        Long userId,
+        Long certificateId,
         String certificateName,
         String issuerName,
         LocalDate acquiredDate,
