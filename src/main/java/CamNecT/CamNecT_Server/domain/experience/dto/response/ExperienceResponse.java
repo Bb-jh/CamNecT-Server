@@ -5,7 +5,7 @@ import CamNecT.CamNecT_Server.domain.experience.model.Experience;
 import java.time.LocalDate;
 
 public record ExperienceResponse(
-        Long userId,
+        Long experienceId,
         String companyName,
         String majorName,
         LocalDate startDate,
