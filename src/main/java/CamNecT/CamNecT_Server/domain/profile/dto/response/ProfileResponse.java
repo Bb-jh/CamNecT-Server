@@ -3,7 +3,7 @@ package CamNecT.CamNecT_Server.domain.profile.dto.response;
 import CamNecT.CamNecT_Server.domain.education.dto.response.EducationResponse;
 import CamNecT.CamNecT_Server.domain.portfolio.dto.response.PortfolioPreviewResponse;
 import CamNecT.CamNecT_Server.domain.users.model.UserProfile;
-import CamNecT.CamNecT_Server.global.tag.model.Certificate;
+import CamNecT.CamNecT_Server.domain.certificate.model.Certificate;
 import CamNecT.CamNecT_Server.domain.experience.model.Experience;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
 

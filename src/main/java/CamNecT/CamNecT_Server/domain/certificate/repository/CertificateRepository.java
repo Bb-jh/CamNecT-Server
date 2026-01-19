@@ -1,13 +1,12 @@
-package CamNecT.CamNecT_Server.global.tag.repository;
+package CamNecT.CamNecT_Server.domain.certificate.repository;
 
 import CamNecT.CamNecT_Server.domain.certificate.model.Certificate;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface CertificateRepository extends JpaRepository<Certificate, Long> {
-
-    //user id로 모든 자격증 조회
-    List<Certificate> findAllByUserId(Long userId);
-
+    List<Certificate> findAllByUserIdOrderByStartDateDesc(Long userId);
 }

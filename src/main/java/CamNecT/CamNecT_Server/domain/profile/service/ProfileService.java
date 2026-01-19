@@ -13,7 +13,7 @@ import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.domain.users.repository.UserTagMapRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
-import CamNecT.CamNecT_Server.global.tag.model.Certificate;
+import CamNecT.CamNecT_Server.domain.certificate.model.Certificate;
 import CamNecT.CamNecT_Server.domain.experience.model.Experience;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import CamNecT.CamNecT_Server.global.tag.repository.CertificateRepository;
