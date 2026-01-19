@@ -1,8 +1,8 @@
-package CamNecT.CamNecT_Server.domain.institution.service;
+package CamNecT.CamNecT_Server.global.tag.service;
 
-import CamNecT.CamNecT_Server.domain.institution.dto.response.InstitutionListResponse;
-import CamNecT.CamNecT_Server.domain.institution.dto.response.InstitutionResponse;
-import CamNecT.CamNecT_Server.domain.institution.repository.InstitutionRepository;
+import CamNecT.CamNecT_Server.global.tag.dto.response.InstitutionListResponse;
+import CamNecT.CamNecT_Server.global.tag.dto.response.InstitutionResponse;
+import CamNecT.CamNecT_Server.global.tag.repository.InstitutionRepository;
 import CamNecT.CamNecT_Server.global.tag.model.Institutions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

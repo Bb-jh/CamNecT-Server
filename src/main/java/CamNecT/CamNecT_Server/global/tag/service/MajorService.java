@@ -1,9 +1,9 @@
-package CamNecT.CamNecT_Server.domain.institution.service;
+package CamNecT.CamNecT_Server.global.tag.service;
 
-import CamNecT.CamNecT_Server.domain.institution.dto.response.MajorListResponse;
-import CamNecT.CamNecT_Server.domain.institution.dto.response.MajorResponse;
-import CamNecT.CamNecT_Server.domain.institution.repository.InstitutionRepository;
-import CamNecT.CamNecT_Server.domain.institution.repository.MajorRepository;
+import CamNecT.CamNecT_Server.global.tag.dto.response.MajorListResponse;
+import CamNecT.CamNecT_Server.global.tag.dto.response.MajorResponse;
+import CamNecT.CamNecT_Server.global.tag.repository.InstitutionRepository;
+import CamNecT.CamNecT_Server.global.tag.repository.MajorRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
 import CamNecT.CamNecT_Server.global.tag.model.Majors;
