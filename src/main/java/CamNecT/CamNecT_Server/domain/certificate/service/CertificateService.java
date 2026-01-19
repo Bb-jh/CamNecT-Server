@@ -41,7 +41,7 @@ public class CertificateService {
     }
 
     public List<CertificateResponse> getMyCertificate(Long userId) {
-        return certificateRepository.findAllByUserIdOrderByStartDateDesc(userId)
+        return certificateRepository.findAllByUserIdOrderByAcquiredDateDesc(userId)
                 .stream()
                 .map(CertificateResponse::from)
                 .toList();
