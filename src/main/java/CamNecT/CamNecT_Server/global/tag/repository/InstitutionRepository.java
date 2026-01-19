@@ -7,5 +7,5 @@ import java.util.List;
 
 
 public interface InstitutionRepository extends JpaRepository<Institutions, Long> {
-    List<Institutions> findAllByOrderByNameAsc();
+    List<Institutions> findAllByOrderByInstitutionNameKorAsc()();
 }
