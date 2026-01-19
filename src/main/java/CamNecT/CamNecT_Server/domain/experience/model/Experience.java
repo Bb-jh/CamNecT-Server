@@ -1,10 +1,10 @@
-package CamNecT.CamNecT_Server.global.tag.model;
+package CamNecT.CamNecT_Server.domain.experience.model;
 
 import CamNecT.CamNecT_Server.domain.users.model.Users;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "experience")
@@ -19,8 +19,9 @@ public class Experience {
     @Column(name = "experience_id")
     private Long experienceId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private Users user;
 
     @Column(name = "company_name", nullable = false, length = 100)
     private String companyName;
@@ -29,14 +30,30 @@ public class Experience {
     private String majorName; // 직무 (이미지상 major_name으로 명시됨)
 
     @Column(name = "start_date", nullable = false)
-    private LocalDateTime startDate; // 취업일
+    private LocalDate startDate; // 취업일
 
     @Column(name = "end_date")
-    private LocalDateTime endDate; // 퇴직일
+    private LocalDate endDate; // 퇴직일
 
     @Column(name = "is_current", nullable = false)
     private Boolean isCurrent; // 재직중 여부
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+
+    public void updateExperience(
+            String companyName,
+            String majorName,
+            LocalDate startDate,
+            LocalDate endDate,
+            Boolean isCurrent,
+            String description
+    ) {
+        this.companyName = companyName;
+        this.majorName = majorName;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.isCurrent = isCurrent;
+        this.description = description;
+    }
 }

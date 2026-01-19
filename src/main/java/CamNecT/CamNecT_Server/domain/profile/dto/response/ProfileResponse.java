@@ -4,7 +4,7 @@ import CamNecT.CamNecT_Server.domain.education.dto.response.EducationResponse;
 import CamNecT.CamNecT_Server.domain.portfolio.dto.response.PortfolioPreviewResponse;
 import CamNecT.CamNecT_Server.domain.users.model.UserProfile;
 import CamNecT.CamNecT_Server.global.tag.model.Certificate;
-import CamNecT.CamNecT_Server.global.tag.model.Experience;
+import CamNecT.CamNecT_Server.domain.experience.model.Experience;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
 
 import java.util.List;
