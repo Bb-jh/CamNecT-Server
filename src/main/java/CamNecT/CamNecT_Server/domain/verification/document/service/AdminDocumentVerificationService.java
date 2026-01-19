@@ -1,7 +1,7 @@
 package CamNecT.CamNecT_Server.domain.verification.document.service;
 
-import CamNecT.CamNecT_Server.domain.verification.document.Repository.DocumentVerificationFileRepository;
-import CamNecT.CamNecT_Server.domain.verification.document.Repository.DocumentVerificationSubmissionRepository;
+import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationFileRepository;
+import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationSubmissionRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.DownloadResult;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.ReviewDocumentVerificationRequest;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationFile;

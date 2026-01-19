@@ -18,8 +18,8 @@ public class HomeController {
 
     @GetMapping
     public ApiResponse<HomeResponse> home(
-            @RequestHeader("X-Device-Id") String deviceId
+            @RequestHeader("X-Device-Id") Long userId
     ) {
-        return ApiResponse.success(homeService.getHome(deviceId));
+        return ApiResponse.success(homeService.getHome(userId));
     }
 }

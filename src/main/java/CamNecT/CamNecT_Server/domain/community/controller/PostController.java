@@ -3,6 +3,7 @@ package CamNecT.CamNecT_Server.domain.community.controller;
 import CamNecT.CamNecT_Server.domain.community.dto.request.CreatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.request.UpdatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.response.CreatePostResponse;
+import CamNecT.CamNecT_Server.domain.community.dto.response.PostDetailResponse;
 import CamNecT.CamNecT_Server.domain.community.dto.response.ToggleLikeResponse;
 import CamNecT.CamNecT_Server.domain.community.service.PostService;
 import CamNecT.CamNecT_Server.global.common.response.ApiResponse;
@@ -44,18 +45,20 @@ public class PostController {
         return ApiResponse.success(null);
     }
 
+    @GetMapping("/{postId}")
+    public ApiResponse<PostDetailResponse> getDetail(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable Long postId
+    ) {
+        return ApiResponse.success(postService.getDetail(userId, postId));
+    }
+
     @PostMapping("/{postId}/likes")
     public ApiResponse<ToggleLikeResponse> toggleLike(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @PathVariable Long postId
     ) {
         return ApiResponse.success(postService.toggleLike(userId, postId));
-    }
-
-    @PostMapping("/{postId}/views")
-    public ApiResponse<Void> view(@PathVariable Long postId) {
-        postService.increaseView(postId);
-        return ApiResponse.success(null);
     }
 
     @PostMapping("/{postId}/comments/{commentId}/accept")

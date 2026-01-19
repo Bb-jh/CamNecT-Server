@@ -60,7 +60,10 @@ jobs:
             set -e
             cd /home/${{ secrets.USERNAME }}/camnect-project
             
-            test -f .env.prod || (echo "[ERROR] .env.prod not found in camnect-project" && exit 1)
+            if [ ! -f .env.prod ]; then
+              echo "[ERROR] .env.prod not found in camnect-project"
+              exit 1
+            fi
 
             export DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}"
           

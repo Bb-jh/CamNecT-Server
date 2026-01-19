@@ -3,6 +3,7 @@ package CamNecT.CamNecT_Server.domain.community.service;
 import CamNecT.CamNecT_Server.domain.community.dto.request.CreatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.request.UpdatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.response.CreatePostResponse;
+import CamNecT.CamNecT_Server.domain.community.dto.response.PostDetailResponse;
 import CamNecT.CamNecT_Server.domain.community.dto.response.ToggleLikeResponse;
 
 public interface PostService {
@@ -14,7 +15,7 @@ public interface PostService {
 
     ToggleLikeResponse toggleLike(Long userId, Long postId);
 
-    void increaseView(Long postId);
+    PostDetailResponse getDetail(Long userId, Long postId);
 
     void acceptComment(Long userId, Long postId, Long commentId);
 }

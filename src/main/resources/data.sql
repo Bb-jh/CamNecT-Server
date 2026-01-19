@@ -1,18 +1,20 @@
 -- 1. Institutions (동일 학교)
 INSERT INTO institutions (institution_code, institution_name_kor, institution_name_eng, sort_order, is_active, created_at, updated_at)
-VALUES ('UNIV001', '한국대학교', 'Hankuk University', 1, true, NOW(), NOW());
+VALUES ('UNIV001', '한국대학교', 'Hankuk University', 1, true, NOW(), NOW()),
+       ('UNIV002', '건국대학교', 'Konkuk University', 1, true, NOW(), NOW());
 
--- 2. Colleges (한국대학교 소속의 두 단과대)
-INSERT INTO colleges (institution_id, college_code, college_name_kor, college_name_eng, sort_order, is_active, created_at, updated_at)
-VALUES
-    (1, 'COLL_IT', 'IT공과대학', 'College of IT Engineering', 1, true, NOW(), NOW()),
-    (1, 'COLL_BIZ', '경영대학', 'College of Business Administration', 2, true, NOW(), NOW());
+-- -- 2. Colleges (한국대학교 소속의 두 단과대)
+-- INSERT INTO colleges (institution_id, college_code, college_name_kor, college_name_eng, sort_order, is_active, created_at, updated_at)
+-- VALUES
+--     (1, 'COLL_IT', 'IT공과대학', 'College of IT Engineering', 1, true, NOW(), NOW()),
+--     (1, 'COLL_BIZ', '경영대학', 'College of Business Administration', 2, true, NOW(), NOW());
 
 -- 3. Majors (각 단과대별 학과)
-INSERT INTO majors (college_id, major_code, major_name_kor, major_name_eng, sort_order, is_active, created_at, updated_at)
+INSERT INTO majors (institution_id, major_code, major_name_kor, major_name_eng, sort_order, is_active, created_at, updated_at)
 VALUES
-    (1, 'CS101', '컴퓨터공학과', 'Computer Science', 1, true, NOW(), NOW()),
-    (2, 'BA201', '경영학과', 'Business Administration', 1, true, NOW(), NOW());
+    (1, 'CS101', '컴퓨터공학과', 'Computer Science and Engineering', 1, true, NOW(), NOW()),
+    (1, 'CS102', '컴퓨터과학과', 'Computer Science', 1, true, NOW(), NOW()),
+    (1, 'BA201', '경영학과', 'Business Administration', 1, true, NOW(), NOW());
 
 -- 4. Users (기존 유저 2명)
 INSERT INTO users (username, password_hash, name, phone_num, email, terms_service_agreed, terms_privacy_agreed, email_verified, status, created_at, updated_at)
