@@ -10,7 +10,9 @@ import java.util.Optional;
 public interface MajorRepository extends JpaRepository<Majors, Long> {
 
 
-    List<Majors> findByInstitution_InstitutionIdOrderByMajorNameAsc(Long institutionId);
+    List<Majors> findByInstitution_InstitutionIdOrderByMajorNameKorAsc(Long institutionId);
+
+    List<Majors> findByInstitution_InstitutionIdOrderByMajorNameEngAsc(Long institutionId);
 
     Optional<Majors> findByMajorIdAndInstitution_InstitutionId(
             Long majorId,
