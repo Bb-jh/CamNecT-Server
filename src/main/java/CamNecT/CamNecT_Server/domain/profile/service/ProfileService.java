@@ -17,8 +17,6 @@ import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.domain.users.repository.UserTagMapRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
-import CamNecT.CamNecT_Server.domain.certificate.model.Certificate;
-import CamNecT.CamNecT_Server.domain.experience.model.Experience;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -53,13 +51,12 @@ public class ProfileService {
                 .stream()
                 .map(EducationResponse::from)
                 .toList();
-        List<ExperienceResponse> experienceList = experienceRepository.findAllByUserIdOrderByStartDateDesc(profileUserId).stream()
+        List<ExperienceResponse> experienceList = experienceRepository.findAllByUser_UserIdOrderByStartDateDesc(profileUserId).stream()
                 .map(ExperienceResponse::from)
                 .toList();
-        List<CertificateResponse> certificateList = certificateRepository.findAllByUserIdOrderByAcquiredDateDesc(profileUserId).stream()
+        List<CertificateResponse> certificateList = certificateRepository.findAllByUser_UserIdOrderByAcquiredDateDesc(profileUserId).stream()
                 .map(CertificateResponse::from)
                 .toList();
-        ;
 
         List<Tag> tagList = userTagMapRepository.findAllTagsByUserId(profileUserId);
 

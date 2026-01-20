@@ -41,7 +41,7 @@ public class ExperienceService {
     }
 
     public List<ExperienceResponse> getMyExperience(Long userId) {
-        return experienceRepository.findAllByUserIdOrderByStartDateDesc(userId)
+        return experienceRepository.findAllByUser_UserIdOrderByStartDateDesc(userId)
                 .stream()
                 .map(ExperienceResponse::from)
                 .toList();
