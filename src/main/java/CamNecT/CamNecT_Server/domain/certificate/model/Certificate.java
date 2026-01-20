@@ -1,9 +1,10 @@
-package CamNecT.CamNecT_Server.global.tag.model;
+package CamNecT.CamNecT_Server.domain.certificate.model;
 
 import CamNecT.CamNecT_Server.domain.users.model.Users;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,8 +20,9 @@ public class Certificate {
     @Column(name = "certificate_id")
     private Long certificateId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private Users user;
 
     @Column(name = "certificate_name", nullable = false, length = 100)
     private String certificateName;
@@ -29,14 +31,24 @@ public class Certificate {
     private String issuerName;
 
     @Column(name = "acquired_date", nullable = false)
-    private LocalDateTime acquiredDate; // 취득일
+    private LocalDate acquiredDate; // 취득일
 
     @Column(name = "expire_date")
-    private LocalDateTime expireDate; // 만료일
+    private LocalDate expireDate; // 만료일
 
     @Column(name = "credential_url", length = 500)
     private String credentialUrl; // 증명 URL
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+
+
+    public void updateCertificate(String certificateName, String issuerName, LocalDate acquiredDate, LocalDate expireDate, String credentialUrl, String description) {
+        this.certificateName = certificateName;
+        this.issuerName = issuerName;
+        this.acquiredDate = acquiredDate;
+        this.expireDate = expireDate;
+        this.credentialUrl = credentialUrl;
+        this.description = description;
+    }
 }

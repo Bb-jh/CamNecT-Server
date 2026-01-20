@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.domain.institution.dto.response;
+package CamNecT.CamNecT_Server.global.tag.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;
