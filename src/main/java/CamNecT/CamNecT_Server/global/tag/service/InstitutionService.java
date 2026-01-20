@@ -19,7 +19,7 @@ public class InstitutionService {
 
     public InstitutionListResponse getInstitutions() {
         List<InstitutionResponse> items =
-                institutionRepository.findAllByOrderByNameAsc().stream()
+                institutionRepository.findAllByOrderByInstitutionNameKorAsc().stream()
                         .map(InstitutionResponse::from)
                         .toList();
 
