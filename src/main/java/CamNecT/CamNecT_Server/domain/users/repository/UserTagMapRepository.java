@@ -16,4 +16,6 @@ public interface UserTagMapRepository extends JpaRepository<UserTagMap, Long> {
             "WHERE utm.userId = :userId")
     List<Tag> findAllTagsByUserId(@Param("userId") Long userId);
 
+    //유저들의 모든 태그 매핑 정보를 한번에 가져오기
+    List<UserTagMap> findAllByUserIdIn(List<Long> userIds);
 }
