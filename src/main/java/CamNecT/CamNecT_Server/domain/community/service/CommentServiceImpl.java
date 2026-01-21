@@ -41,17 +41,31 @@ public class CommentServiceImpl implements CommentService {
         if (req.parentCommentId() != null) {
             parent = commentsRepository.findById(req.parentCommentId())
                     .orElseThrow(() -> new IllegalArgumentException("parent comment not found"));
+
             if (!Objects.equals(parent.getPost().getId(), postId)) {
                 throw new IllegalArgumentException("parent comment not in post");
+            }
+
+            // 부모가 삭제/숨김이면 자식 댓글 추가 불가
+            if (parent.getStatus() == CommentStatus.DELETED || parent.getStatus() == CommentStatus.HIDDEN) {
+                throw new IllegalArgumentException("cannot reply to deleted/hidden parent");
+            }
+
+            // 2뎁스 제한: 부모가 이미 대댓글이면 금지
+            if (parent.getParent() != null) {
+                throw new IllegalArgumentException("max depth is 2");
             }
         }
 
         Comments saved = commentsRepository.save(Comments.create(post, userId, parent, req.content()));
 
-        // 댓글 수 +1
         PostStats stats = postStatsRepository.findByPost_Id(postId)
                 .orElseGet(() -> postStatsRepository.save(PostStats.init(post)));
-        stats.incComment();
+
+        stats.incComment();               // 전체 댓글 수 +1
+        if (parent == null) {
+            stats.incRootComment();       // 루트 댓글 수(=답변 수) +1
+        }
 
         return new CreateCommentResponse(saved.getId());
     }
@@ -84,10 +98,19 @@ public class CommentServiceImpl implements CommentService {
             throw new IllegalArgumentException("forbidden");
         }
 
+        // 중복 삭제 방지 (카운트 두 번 깎이는 거 방지)
+        if (comment.getStatus() == CommentStatus.DELETED) return;
+
+        boolean isRoot = (comment.getParent() == null);
+
         comment.deleteSoft();
 
-        // 댓글 수 -1
-        postStatsRepository.findByPost_Id(comment.getPost().getId()).ifPresent(PostStats::decComment);
+        PostStats stats = postStatsRepository.findByPost_Id(comment.getPost().getId())
+                .orElseGet(() -> postStatsRepository.save(PostStats.init(comment.getPost())));
+
+        stats.decComment();
+        if (isRoot) stats.decRootComment();
+        stats.touch();
     }
 
     @Transactional

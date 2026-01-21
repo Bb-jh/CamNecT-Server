@@ -19,7 +19,7 @@ public class CommunityHomeServiceImpl implements CommunityHomeService {
     public CommunityHomeResponse getHome(Long interestTagId) {
         var recommended = (interestTagId == null)
                 ? PostQueryServiceImpl_empty()
-                : postQueryService.getPostsByInterestTag(interestTagId, null, 10);
+                : postQueryService.getPostsByInterestTag(interestTagId, null, null,10);
 
         var waiting = postQueryService.getWaitingQuestions(3);
 
@@ -32,6 +32,6 @@ public class CommunityHomeServiceImpl implements CommunityHomeService {
 
     // interestTagId 없을 때는 비워두기
     private static PostListResponse PostQueryServiceImpl_empty() {
-        return PostListResponse.of(List.of(), false);
+        return PostListResponse.of(List.of(), false, null);
     }
 }

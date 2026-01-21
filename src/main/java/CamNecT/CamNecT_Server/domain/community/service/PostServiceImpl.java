@@ -4,16 +4,15 @@ import CamNecT.CamNecT_Server.domain.community.dto.request.CreatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.request.UpdatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.response.CreatePostResponse;
 import CamNecT.CamNecT_Server.domain.community.dto.response.PostDetailResponse;
+import CamNecT.CamNecT_Server.domain.community.dto.response.ToggleBookmarkResponse;
 import CamNecT.CamNecT_Server.domain.community.dto.response.ToggleLikeResponse;
 import CamNecT.CamNecT_Server.domain.community.event.CommentAcceptedEvent;
 import CamNecT.CamNecT_Server.domain.community.model.*;
 import CamNecT.CamNecT_Server.domain.community.model.Comments.AcceptedComments;
 import CamNecT.CamNecT_Server.domain.community.model.Comments.Comments;
-import CamNecT.CamNecT_Server.domain.community.model.Posts.PostLikes;
-import CamNecT.CamNecT_Server.domain.community.model.Posts.PostStats;
-import CamNecT.CamNecT_Server.domain.community.model.Posts.PostTags;
-import CamNecT.CamNecT_Server.domain.community.model.Posts.Posts;
+import CamNecT.CamNecT_Server.domain.community.model.Posts.*;
 import CamNecT.CamNecT_Server.domain.community.model.enums.BoardCode;
+import CamNecT.CamNecT_Server.domain.community.model.enums.CommentStatus;
 import CamNecT.CamNecT_Server.domain.community.model.enums.PostStatus;
 import CamNecT.CamNecT_Server.domain.community.repository.*;
 import CamNecT.CamNecT_Server.domain.community.repository.Comments.AcceptedCommentsRepository;
@@ -23,6 +22,7 @@ import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import CamNecT.CamNecT_Server.global.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +47,8 @@ public class PostServiceImpl implements PostService {
 
     private final PostAttachmentsRepository postAttachmentsRepository;
     private final PostAttachmentsService postAttachmentsService;
+
+    private final PostBookmarksRepository postBookmarksRepository;
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -209,18 +211,22 @@ public class PostServiceImpl implements PostService {
             throw new IllegalArgumentException("comment not in post");
         }
 
-        if (acceptedCommentsRepository.existsByPost_Id(postId)) {
-            throw new IllegalArgumentException("already accepted");
+        // (선택) 삭제/숨김 댓글 채택 금지
+        if (comment.getStatus() != CommentStatus.PUBLISHED) {
+            throw new IllegalArgumentException("cannot accept deleted/hidden comment");
         }
 
-        acceptedCommentsRepository.save(AcceptedComments.of(post, comment, userId));
+        try {
+            acceptedCommentsRepository.save(AcceptedComments.of(post, comment, userId));
+        } catch (DataIntegrityViolationException e) {
+            // 유니크(post_id) 위반이면 여기로 들어옴
+            throw new IllegalArgumentException("already accepted");
+        }
         touchStats(postId);
 
-        Long receiverId = comment.getUserId(); // 프로젝트에 맞게 comment.getUser().getId()일 수도 있음
+        Long receiverId = comment.getUserId();
         if (receiverId != null && !Objects.equals(receiverId, userId)) {
-            eventPublisher.publishEvent(new CommentAcceptedEvent(
-                    receiverId, postId, commentId, userId
-            ));
+            eventPublisher.publishEvent(new CommentAcceptedEvent(receiverId, postId, commentId, userId));
         }
     }
 
@@ -244,6 +250,30 @@ public class PostServiceImpl implements PostService {
         }
     }
 
+    @Transactional
+    public ToggleBookmarkResponse toggleBookmark(Long userId, Long postId) {
+        Posts post = postsRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("POST_NOT_FOUND"));
+
+        PostStats stats = postStatsRepository.findByPost_Id(postId)
+                .orElseGet(() -> postStatsRepository.save(PostStats.init(post)));
+
+        boolean exists = postBookmarksRepository.existsByPost_IdAndUserId(postId, userId);
+
+        if (exists) {
+            postBookmarksRepository.deleteByPost_IdAndUserId(postId, userId);
+            stats.decBookmark();
+        } else {
+            postBookmarksRepository.save(PostBookmarks.create(post, userId));
+            stats.incBookmark();
+        }
+
+        // stats 저장(더티체킹이면 없어도 되지만 명시적으로)
+        postStatsRepository.save(stats);
+
+        return new ToggleBookmarkResponse(postId, !exists, stats.getBookmarkCount());
+    }
+
     private void touchStats(Long postId) {
         postStatsRepository.findByPost_Id(postId).ifPresent(PostStats::touch);
     }
@@ -252,4 +282,6 @@ public class PostServiceImpl implements PostService {
         return postStatsRepository.findByPost_Id(post.getId())
                 .orElseGet(() -> postStatsRepository.save(PostStats.init(post)));
     }
+
+
 }
