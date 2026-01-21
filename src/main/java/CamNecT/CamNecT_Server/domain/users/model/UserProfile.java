@@ -1,7 +1,5 @@
 package CamNecT.CamNecT_Server.domain.users.model;
 
-import CamNecT.CamNecT_Server.global.tag.model.Institutions;
-import CamNecT.CamNecT_Server.global.tag.model.Majors;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -43,4 +41,15 @@ public class UserProfile {
 
     @Column(name = "major_id", nullable = false)
     private Long majorId;
+
+    public void updateOnboardingProfile(String bio, String profileImageUrl) {
+        if (bio != null) {
+            String b = bio.trim();
+            this.bio = b.isBlank() ? null : b;
+        }
+        if (profileImageUrl != null) {
+            String u = profileImageUrl.trim();
+            this.profileImageUrl = u.isBlank() ? null : u;
+        }
+    }
 }
