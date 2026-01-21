@@ -86,22 +86,4 @@ public class SignupService {
 
         return new SignupResponse(user.getUserId(), user.getStatus().name());
     }
-
-    @Transactional
-    public void verifyEmail(String rawToken) {
-        String hash = TokenUtil.sha256Hex(rawToken);
-
-        EmailVerificationToken token = tokenRepository.findByTokenHash(hash)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_TOKEN"));
-
-        if (token.isUsed() || token.isExpired()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "TOKEN_EXPIRED_OR_USED");
-        }
-
-        token.markUsed();
-
-        Users user = token.getUser();
-        user.markEmailVerified();
-        user.changeStatus(UserStatus.ADMIN_PENDING); //가계정 -> 학교 인증 대기
-    }
 }
