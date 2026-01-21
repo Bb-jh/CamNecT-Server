@@ -2,9 +2,9 @@ package CamNecT.CamNecT_Server.domain.community.controller;
 
 import CamNecT.CamNecT_Server.domain.community.dto.request.CreatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.request.UpdatePostRequest;
-import CamNecT.CamNecT_Server.domain.community.dto.response.CreatePostResponse;
-import CamNecT.CamNecT_Server.domain.community.dto.response.PostDetailResponse;
-import CamNecT.CamNecT_Server.domain.community.dto.response.ToggleLikeResponse;
+import CamNecT.CamNecT_Server.domain.community.dto.response.*;
+import CamNecT.CamNecT_Server.domain.community.service.PostQueryService;
+import CamNecT.CamNecT_Server.domain.community.service.PostQueryService.*;
 import CamNecT.CamNecT_Server.domain.community.service.PostService;
 import CamNecT.CamNecT_Server.global.common.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService;
+    private final PostQueryService postQueryService;
 
     @PostMapping
     public ApiResponse<CreatePostResponse> create(
@@ -24,6 +25,20 @@ public class PostController {
             @RequestBody @Valid CreatePostRequest req
     ) {
         return ApiResponse.success(postService.create(userId, req));
+    }
+
+    //리스트: /api/community/posts
+    @GetMapping
+    public ApiResponse<PostListResponse> list(
+            @RequestParam(defaultValue = "ALL") Tab tab,
+            @RequestParam(defaultValue = "RECOMMENDED") Sort sort,
+            @RequestParam(required = false) Long tagId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long cursorId,
+            @RequestParam(required = false) Long cursorValue,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ApiResponse.success(postQueryService.getPosts(tab, sort, tagId, keyword, cursorId, cursorValue, size));
     }
 
     @PatchMapping("/{postId}")
@@ -45,6 +60,8 @@ public class PostController {
         return ApiResponse.success(null);
     }
 
+
+
     @GetMapping("/{postId}")
     public ApiResponse<PostDetailResponse> getDetail(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
@@ -53,6 +70,7 @@ public class PostController {
         return ApiResponse.success(postService.getDetail(userId, postId));
     }
 
+    //좋아요
     @PostMapping("/{postId}/likes")
     public ApiResponse<ToggleLikeResponse> toggleLike(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
@@ -61,6 +79,7 @@ public class PostController {
         return ApiResponse.success(postService.toggleLike(userId, postId));
     }
 
+    //댓글 채택
     @PostMapping("/{postId}/comments/{commentId}/accept")
     public ApiResponse<Void> accept(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
@@ -69,5 +88,14 @@ public class PostController {
     ) {
         postService.acceptComment(userId, postId, commentId);
         return ApiResponse.success(null);
+    }
+
+    //북마크
+    @PostMapping("/posts/{postId}/bookmarks")
+    public ApiResponse<ToggleBookmarkResponse> toggleBookmark(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable Long postId
+    ) {
+        return ApiResponse.success(postService.toggleBookmark(userId, postId));
     }
 }

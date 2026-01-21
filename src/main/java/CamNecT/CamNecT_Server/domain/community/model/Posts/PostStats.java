@@ -12,7 +12,10 @@ import java.time.LocalDateTime;
         uniqueConstraints = @UniqueConstraint(name = "uk_post_stats_post", columnNames = "post_id"),
         indexes = {
                 @Index(name = "idx_post_stats_hot", columnList = "hot_score,post_id"),
-                @Index(name = "idx_post_stats_last", columnList = "last_activity_at,post_id")
+                @Index(name = "idx_post_stats_last", columnList = "last_activity_at,post_id"),
+                @Index(name = "idx_post_stats_like", columnList = "like_count,post_id"),
+                @Index(name = "idx_post_stats_bookmark", columnList = "bookmark_count,post_id"),
+                @Index(name = "idx_post_stats_root", columnList = "root_comment_count,post_id")
         }
 )
 @Getter
@@ -43,6 +46,12 @@ public class PostStats {
     @Column(name = "hot_score", nullable = false)
     private long hotScore;
 
+    @Column(name = "bookmark_count", nullable = false)
+    private long bookmarkCount;
+
+    @Column(name = "root_comment_count", nullable = false)
+    private long rootCommentCount;
+
     @Column(name = "last_activity_at", nullable = false)
     private LocalDateTime lastActivityAt;
 
@@ -58,6 +67,8 @@ public class PostStats {
                 .commentCount(0)
                 .viewCount(0)
                 .hotScore(0)
+                .bookmarkCount(0)
+                .rootCommentCount(0)
                 .lastActivityAt(now)
                 .build();
     }
@@ -68,36 +79,23 @@ public class PostStats {
 
     public void incView() {
         this.viewCount++;
-        recalcHotScore();
+        reHotS();
         touch();
     }
 
-    public void incLike() {
-        this.likeCount++;
-        recalcHotScore();
-        touch();
-    }
+    public void incLike() { this.likeCount++; reHotS(); touch(); }
+    public void decLike() { if (this.likeCount > 0) this.likeCount--; reHotS(); touch(); }
 
-    public void decLike() {
-        if (this.likeCount > 0) this.likeCount--;
-        recalcHotScore();
-        touch();
-    }
+    public void incComment() { this.commentCount++; reHotS(); touch(); }
+    public void decComment() { if (this.commentCount > 0) this.commentCount--; reHotS(); touch(); }
 
-    public void incComment() {
-        this.commentCount++;
-        recalcHotScore();
-        touch();
-    }
-
-    public void decComment() {
-        if (this.commentCount > 0) this.commentCount--;
-        recalcHotScore();
-        touch();
-    }
-
-    private void recalcHotScore() {
-        // 가중치는 임시(원하면 조정)
+    private void reHotS() { //HotScore 계산 식(추후 수정 가능)
         this.hotScore = this.likeCount * 3L + this.commentCount * 5L + this.viewCount;
     }
+
+    public void incBookmark() { this.bookmarkCount++; touch(); }
+    public void decBookmark() { if (this.bookmarkCount > 0) this.bookmarkCount--; touch(); }
+
+    public void incRootComment() { this.rootCommentCount++; touch(); }
+    public void decRootComment() { if (this.rootCommentCount > 0) this.rootCommentCount--; touch(); }
 }
