@@ -50,6 +50,9 @@ dependencies {
     implementation platform("software.amazon.awssdk:bom:2.41.5")
     implementation "software.amazon.awssdk:s3"
 
+    //FCM
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
+
     //h2
     runtimeOnly 'com.h2database:h2'
     testRuntimeOnly 'com.h2database:h2'
