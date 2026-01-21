@@ -117,6 +117,11 @@ public class PostServiceImpl implements PostService {
             throw new IllegalArgumentException("forbidden");
         }
 
+        if (post.getBoard().getCode() == BoardCode.QUESTION
+                && acceptedCommentsRepository.existsByPost_Id(postId)) {
+            throw new IllegalArgumentException("cannot delete accepted question");
+        }
+
         post.deleteSoft();
 
         postAttachmentsRepository.softDeleteByPostId(postId);
