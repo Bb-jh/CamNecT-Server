@@ -10,16 +10,25 @@ RUN chmod +x /build/gradlew
 
 COPY src /build/src
 
+#레이어작업
 RUN --mount=type=cache,target=/root/.gradle \
     /build/gradlew bootJar -x test --no-daemon
 
+RUN mkdir -p /build/extracted && \
+    cp build/libs/*.jar application.jar && \
+    java -Djarmode=tools -jar application.jar extract --layers --destination /build/extracted
+
+
 FROM eclipse-temurin:21-jre AS prod
-WORKDIR /app
-
-COPY --from=builder /build/build/libs/*.jar app.jar
-
+WORKDIR /application
 ENV TZ=Asia/Seoul
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+COPY --from=builder /build/extracted/dependencies/ ./
+COPY --from=builder /build/extracted/spring-boot-loader/ ./
+COPY --from=builder /build/extracted/snapshot-dependencies/ ./
+COPY --from=builder /build/extracted/application/ ./
+
+ENTRYPOINT ["java", "-jar", "application.jar"]
+
 
 
