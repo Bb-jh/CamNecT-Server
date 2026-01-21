@@ -27,7 +27,7 @@ public class MajorService {
         }
 
         List<MajorResponse> items = majorRepository
-                .findByInstitution_InstitutionIdOrderByMajorNameAsc(institutionId)
+                .findByInstitution_InstitutionIdOrderByMajorNameKorAsc(institutionId)
                 .stream()
                 .map(MajorResponse::from)
                 .toList();

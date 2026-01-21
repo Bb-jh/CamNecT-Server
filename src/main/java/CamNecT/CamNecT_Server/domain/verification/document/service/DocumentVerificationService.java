@@ -45,31 +45,34 @@ public class DocumentVerificationService {
             throw new IllegalStateException("이미 처리 대기(PENDING) 중인 요청이 있습니다.");
         }
 
-        DocumentVerificationSubmission req = DocumentVerificationSubmission.builder()
+        DocumentVerificationSubmission sub = DocumentVerificationSubmission.builder()
                 .userId(userId)
                 .docType(docType)
                 .status(VerificationStatus.PENDING)
                 .submittedAt(LocalDateTime.now())
                 .build();
 
-        // 파일 검증 + 저장
+        submissionRepo.save(sub);
+
+        String prefix = "user-" + userId + "/submission-" + sub.getId();
+
         for (MultipartFile file : documents) {
             validateFile(file);
 
-            String storageKey = fileStorage.save(String.valueOf(userId), file);
+            String storageKey = fileStorage.save(prefix, file); // ✅ 여기만 이렇게 바꾸면 됨
 
             DocumentVerificationFile vf = DocumentVerificationFile.builder()
                     .originalFilename(safeName(file.getOriginalFilename()))
                     .contentType(file.getContentType())
                     .size(file.getSize())
-                    .storageKey(storageKey)
+                    .storageKey(storageKey) // ✅ "verifications/user-.../submission-.../uuid.pdf"
                     .uploadedAt(LocalDateTime.now())
                     .build();
 
-            req.addFile(vf);
+            sub.addFile(vf);
         }
 
-        DocumentVerificationSubmission saved = submissionRepo.save(req);
+        DocumentVerificationSubmission saved = submissionRepo.save(sub);
         return new SubmitDocumentVerificationResponse(saved.getId(), saved.getStatus(), saved.getSubmittedAt());
     }
 

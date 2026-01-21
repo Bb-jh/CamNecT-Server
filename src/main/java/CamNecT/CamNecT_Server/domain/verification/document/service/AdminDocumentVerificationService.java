@@ -1,5 +1,8 @@
 package CamNecT.CamNecT_Server.domain.verification.document.service;
 
+import CamNecT.CamNecT_Server.domain.users.model.UserStatus;
+import CamNecT.CamNecT_Server.domain.users.model.Users;
+import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationFileRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationSubmissionRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.DownloadResult;
@@ -22,6 +25,7 @@ public class AdminDocumentVerificationService {
     private final DocumentVerificationSubmissionRepository submissionRepo;
     private final DocumentVerificationFileRepository fileRepo;
     private final FileStorage fileStorage;
+    private final UserRepository usersRepository;
 
     @Transactional(readOnly = true)
     public Page<DocumentVerificationSubmission> list(VerificationStatus status, Pageable pageable) {
@@ -43,9 +47,14 @@ public class AdminDocumentVerificationService {
             throw new IllegalStateException("PENDING 상태만 처리할 수 있습니다.");
         }
 
+        Users user = usersRepository.findById(s.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
         if (req.decision() == ReviewDocumentVerificationRequest.Decision.APPROVE) {
             s.approve(adminId);
-            return;
+            if (user.getStatus() != UserStatus.SUSPENDED) {
+                user.changeStatus(UserStatus.ACTIVE);
+            }
         }
 
         // REJECT

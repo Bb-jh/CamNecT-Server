@@ -28,6 +28,15 @@ public class CommentController {
         return ApiResponse.success(commentService.create(userId, postId, req));
     }
 
+    // 댓글 목록 조회 (flat list: parentCommentId로 프론트에서 묶기)
+    @GetMapping("/posts/{postId}/comments")
+    public ApiResponse<List<CommentService.CommentRow>> list(
+            @PathVariable Long postId,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ApiResponse.success(commentService.list(postId, size));
+    }
+
     @PatchMapping("/comments/{commentId}")
     public ApiResponse<Void> update(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
@@ -55,12 +64,5 @@ public class CommentController {
         return ApiResponse.success(commentService.toggleLike(userId, commentId));
     }
 
-    // 댓글 목록 조회 (flat list: parentCommentId로 프론트에서 묶기)
-    @GetMapping("/posts/{postId}/comments")
-    public ApiResponse<List<CommentService.CommentRow>> list(
-            @PathVariable Long postId,
-            @RequestParam(defaultValue = "20") int size
-    ) {
-        return ApiResponse.success(commentService.list(postId, size));
-    }
+
 }
