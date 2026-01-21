@@ -91,7 +91,7 @@ public class PostController {
     }
 
     //북마크
-    @PostMapping("/posts/{postId}/bookmarks")
+    @PostMapping("/{postId}/bookmarks")
     public ApiResponse<ToggleBookmarkResponse> toggleBookmark(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @PathVariable Long postId

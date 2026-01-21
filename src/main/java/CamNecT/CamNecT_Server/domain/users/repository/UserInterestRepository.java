@@ -13,7 +13,7 @@ import java.util.List;
 public interface UserInterestRepository extends JpaRepository<UserInterest, Long> {
 
     // 특정 유저의 관심분야 ID 리스트 조회
-    @Query("SELECT ui.interests.id FROM UserInterest ui WHERE ui.user.id = :userId")
+    @Query("SELECT ui.interests.id FROM UserInterest ui WHERE ui.user.userId = :userId")
     List<Long> findInterestIdsByUserId(@Param("userId") Long userId);
 
     //추천순 & 태그 필터링된 유저 조회
@@ -38,6 +38,4 @@ public interface UserInterestRepository extends JpaRepository<UserInterest, Long
             @Param("myInterestIds") List<Long> myInterestIds,
             @Param("tagList") List<Long> tagList
     );
-
-    Long user(Users user);
 }

@@ -7,7 +7,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "UserInterests")
+@Table(
+        name = "user_interests",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_user_interest",
+                columnNames = {"user_id", "interests_id"}
+        )
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA 기본 생성자 보장
 public class UserInterest {

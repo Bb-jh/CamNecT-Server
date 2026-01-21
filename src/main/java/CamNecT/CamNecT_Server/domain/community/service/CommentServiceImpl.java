@@ -66,6 +66,7 @@ public class CommentServiceImpl implements CommentService {
         if (parent == null) {
             stats.incRootComment();       // 루트 댓글 수(=답변 수) +1
         }
+        stats.touch();
 
         return new CreateCommentResponse(saved.getId());
     }
