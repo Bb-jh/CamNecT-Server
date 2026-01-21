@@ -10,6 +10,7 @@ RUN chmod +x /build/gradlew
 
 COPY src /build/src
 
+#레이어작업
 RUN --mount=type=cache,target=/root/.gradle \
     /build/gradlew bootJar -x test --no-daemon
 
