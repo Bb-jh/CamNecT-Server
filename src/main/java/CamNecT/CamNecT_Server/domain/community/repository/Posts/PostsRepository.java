@@ -9,8 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-
 public interface PostsRepository extends JpaRepository<Posts, Long> {
 
     // LATEST(최신순): 기존 파생쿼리 + keyword/tagId까지 하려면 JPQL 하나 더 두는 게 편함
