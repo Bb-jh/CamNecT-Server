@@ -9,110 +9,143 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-
 public interface PostsRepository extends JpaRepository<Posts, Long> {
 
-    // =========================
-    // Feed (cursor pagination)
-    // =========================
-    Slice<Posts> findByStatusOrderByIdDesc(PostStatus status, Pageable pageable);
-    Slice<Posts> findByStatusAndIdLessThanOrderByIdDesc(PostStatus status, Long cursorId, Pageable pageable);
-
-    Slice<Posts> findByStatusAndBoard_CodeOrderByIdDesc(PostStatus status, BoardCode code, Pageable pageable);
-    Slice<Posts> findByStatusAndBoard_CodeAndIdLessThanOrderByIdDesc(PostStatus status, BoardCode code, Long cursorId, Pageable pageable);
-
-    // =========================
-    // Featured (상단 카드)
-    // =========================
-    List<Posts> findTop5ByStatusOrderByIdDesc(PostStatus status);
-    List<Posts> findTop5ByStatusAndBoard_CodeOrderByIdDesc(PostStatus status, BoardCode code);
-
-
-    // =========================
-    // Waiting Questions (답변대기)
-    // PostStats.commentCount == 0
-    // =========================
+    // LATEST(최신순): 기존 파생쿼리 + keyword/tagId까지 하려면 JPQL 하나 더 두는 게 편함
     @Query("""
         select p
         from Posts p
-        join PostStats ps on ps.post = p
         where p.status = :status
-          and p.board.code = :code
-          and ps.commentCount = 0
+          and (:code is null or p.board.code = :code)
+          and (:cursorId is null or p.id < :cursorId)
+          and (:keyword is null or p.title like concat('%', :keyword, '%')
+                           or p.content like concat('%', :keyword, '%'))
+          and (:tagId is null or exists (
+                select 1 from PostTags pt
+                where pt.post = p and pt.tag.id = :tagId
+          ))
         order by p.id desc
     """)
-    List<Posts> findTop3Waiting(
+    Slice<Posts> findFeedLatestWithFilter(
             @Param("status") PostStatus status,
             @Param("code") BoardCode code,
-            Pageable pageable   // PageRequest.of(0,3)로 제한
-    );
-
-    // =========================
-    // Popular/Hot (인기글/추천글)
-    // PostStats.hotScore 기준
-    // =========================
-    @Query("""
-        select p
-        from Posts p
-        join PostStats ps on ps.post = p
-        where p.status = :status
-        order by ps.hotScore desc, p.id desc
-    """)
-    List<Posts> findTopHot(
-            @Param("status") PostStatus status,
-            Pageable pageable   // PageRequest.of(0,5)
-    );
-
-    @Query("""
-        select p
-        from Posts p
-        join PostStats ps on ps.post = p
-        where p.status = :status
-          and p.board.code = :code
-        order by ps.hotScore desc, p.id desc
-    """)
-    List<Posts> findTopHotByBoard(
-            @Param("status") PostStatus status,
-            @Param("code") BoardCode code,
-            Pageable pageable
-    );
-
-    // =========================
-    // Tag-based recommendation
-    // PostStats.hotScore 기준
-    // =========================
-    @Query("""
-        select p
-        from Posts p
-        join PostStats ps on ps.post = p
-        join PostTags pt on pt.post = p
-        join pt.tag t
-        where p.status = :status
-          and t.name = :tagName
-        order by ps.hotScore desc, p.id desc
-    """)
-    Slice<Posts> findHotByTagName(
-            @Param("status") PostStatus status,
-            @Param("tagName") String tagName,
-            Pageable pageable
-    );
-
-    @Query("""
-        select p
-        from Posts p
-        join PostStats ps on ps.post = p
-        join PostTags pt on pt.post = p
-        join pt.tag t
-        where p.status = :status
-          and t.name = :tagName
-          and p.id < :cursorId
-        order by ps.hotScore desc, p.id desc
-    """)
-    Slice<Posts> findHotByTagNameAfterCursor(
-            @Param("status") PostStatus status,
-            @Param("tagName") String tagName,
+            @Param("tagId") Long tagId,
+            @Param("keyword") String keyword,
             @Param("cursorId") Long cursorId,
             Pageable pageable
     );
+
+    // =========================
+    // Waiting Questions (답변대기)  **루트댓글 기준으로 변경**
+    // PostStats.rootCommentCount == 0
+    // =========================
+    @Query("""
+        select p
+        from Posts p
+        join PostStats ps on ps.post = p
+        where p.status = :status
+          and p.board.code = :code
+          and ps.rootCommentCount = 0
+        order by p.id desc
+    """)
+    Slice<Posts> findWaitingQuestions(
+            @Param("status") PostStatus status,
+            @Param("code") BoardCode code,
+            Pageable pageable
+    );
+    // =========================
+    // ---- 아래부터는 PostQueryService용 확장 쿼리 ----
+    // (tab/keyword/tag/cursor/sort)
+    // =========================
+
+    // RECOMMENDED(추천순 = hotScore)
+    @Query("""
+    select p
+    from Posts p
+    join PostStats ps on ps.post = p
+    where p.status = :status
+      and (:code is null or p.board.code = :code)
+      and (:keyword is null or p.title like concat('%', :keyword, '%')
+                       or p.content like concat('%', :keyword, '%'))
+      and (:tagId is null or exists (
+            select 1 from PostTags pt
+            where pt.post = p and pt.tag.id = :tagId
+      ))
+      and (
+            :cursorValue is null
+            or ps.hotScore < :cursorValue
+            or (ps.hotScore = :cursorValue and p.id < :cursorId)
+      )
+    order by ps.hotScore desc, p.id desc
+""")
+    Slice<Posts> findFeedRecommended(
+            @Param("status") PostStatus status,
+            @Param("code") BoardCode code,
+            @Param("tagId") Long tagId,
+            @Param("keyword") String keyword,
+            @Param("cursorValue") Long cursorValue,   // hotScore 커서
+            @Param("cursorId") Long cursorId,         // postId 커서
+            Pageable pageable
+    );
+
+    // LIKE(좋아요순)
+    @Query("""
+    select p
+    from Posts p
+    join PostStats ps on ps.post = p
+    where p.status = :status
+      and (:code is null or p.board.code = :code)
+      and (:keyword is null or p.title like concat('%', :keyword, '%')
+                       or p.content like concat('%', :keyword, '%'))
+      and (:tagId is null or exists (
+            select 1 from PostTags pt
+            where pt.post = p and pt.tag.id = :tagId
+      ))
+      and (
+            :cursorValue is null
+            or ps.likeCount < :cursorValue
+            or (ps.likeCount = :cursorValue and p.id < :cursorId)
+      )
+    order by ps.likeCount desc, p.id desc
+""")
+    Slice<Posts> findFeedLikeDesc(
+            @Param("status") PostStatus status,
+            @Param("code") BoardCode code,
+            @Param("tagId") Long tagId,
+            @Param("keyword") String keyword,
+            @Param("cursorValue") Long cursorValue,   // likeCount 커서
+            @Param("cursorId") Long cursorId,
+            Pageable pageable
+    );
+
+    @Query("""
+    select p
+    from Posts p
+    join PostStats ps on ps.post = p
+    where p.status = :status
+      and (:code is null or p.board.code = :code)
+      and (:keyword is null or p.title like concat('%', :keyword, '%')
+                       or p.content like concat('%', :keyword, '%'))
+      and (:tagId is null or exists (
+            select 1 from PostTags pt
+            where pt.post = p and pt.tag.id = :tagId
+      ))
+      and (
+            :cursorValue is null
+            or ps.bookmarkCount < :cursorValue
+            or (ps.bookmarkCount = :cursorValue and p.id < :cursorId)
+      )
+    order by ps.bookmarkCount desc, p.id desc
+""")
+    Slice<Posts> findFeedBookmarkDesc(
+            @Param("status") PostStatus status,
+            @Param("code") BoardCode code,
+            @Param("tagId") Long tagId,
+            @Param("keyword") String keyword,
+            @Param("cursorValue") Long cursorValue,   // bookmarkCount 커서
+            @Param("cursorId") Long cursorId,
+            Pageable pageable
+    );
+
+
 }

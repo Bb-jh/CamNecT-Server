@@ -6,6 +6,7 @@ import CamNecT.CamNecT_Server.domain.community.repository.BoardsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +28,7 @@ public class BoardsInitializer implements ApplicationRunner {
 
         try {
             boardsRepository.save(Boards.of(code, name));
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException e) {
             // 여러 인스턴스가 동시에 올라와서 누가 먼저 insert 했을 수 있음 → 무시
         }
     }
