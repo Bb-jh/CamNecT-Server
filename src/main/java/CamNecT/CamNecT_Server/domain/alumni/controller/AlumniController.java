@@ -21,10 +21,9 @@ public class AlumniController {
     @GetMapping
     public List<AlumniPreviewResponse> searchAlumni(
             @UserId Long userId,
+            @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "tags", required = false) List<Long> tagIdList
-    ){
-
-        return alumniService.searchAlumni(userId, tagIdList);
+    ) {
+        return alumniService.searchAlumni(userId, name, tagIdList);
     }
-
 }

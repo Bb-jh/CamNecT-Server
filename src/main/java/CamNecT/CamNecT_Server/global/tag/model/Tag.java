@@ -44,13 +44,6 @@ public class Tag {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // majors/interests 도메인과 “연결할 수도 있게” FK 컬럼 보존 (없어도 OK)
-    @Column(name = "major_id")
-    private Long majorId;
-
-    @Column(name = "interest_id")
-    private Long interestId;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "tag_attribute_id", nullable = false)
     private TagAttribute attribute;
