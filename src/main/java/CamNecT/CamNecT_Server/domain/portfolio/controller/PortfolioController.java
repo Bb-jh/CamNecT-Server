@@ -1,5 +1,6 @@
 package CamNecT.CamNecT_Server.domain.portfolio.controller;
 
+import CamNecT.CamNecT_Server.domain.portfolio.dto.request.PortfolioRequest;
 import CamNecT.CamNecT_Server.domain.portfolio.dto.response.PortfolioDetailResponse;
 import CamNecT.CamNecT_Server.domain.portfolio.dto.response.PortfolioPreviewResponse;
 import CamNecT.CamNecT_Server.domain.portfolio.model.PortfolioProject;
@@ -28,8 +29,11 @@ public class PortfolioController {
     }
 
     @PostMapping
-    public PortfolioPreviewResponse createPortfolio (){
-        return null;
+    public PortfolioPreviewResponse createPortfolio (@UserId Long userId, @ModelAttribute PortfolioRequest portfolioRequest){
+
+        return portfolioService.create(userId, portfolioRequest);
     }
+
+
 
 }

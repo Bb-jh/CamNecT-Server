@@ -36,11 +36,11 @@ VALUES
     ('CUSTOM');     -- ID: 3 (사용자 정의 태그 등)
 
 -- 2. Tags (위에서 생성한 TagAttribute ID 참조)
-INSERT INTO tags (name, type, category, active, major_id, interest_id, tag_attribute_id, created_at)
+INSERT INTO tags (name, type, category, active, tag_attribute_id, created_at)
 VALUES
 -- DEPARTMENT (Attribute ID: 1)
-('컴퓨터공학', 'MAJOR', '학업', true, 1, NULL, 1, NOW()),
-('경영학', 'MAJOR', '학업', true, 2, NULL, 1, NOW()),
+('컴퓨터공학', 'MAJOR', '학업', true, 1, NOW()),
+('경영학', 'MAJOR', '학업', true, 1, NOW()),
 
 -- TOPIC (Attribute ID: 2)
 ('Java', 'SKILL', '학업', true, 1, NULL, 2, NOW()),
@@ -63,59 +63,9 @@ INSERT INTO user_tag_map (user_id, tag_id) VALUES (2, 2); -- 경영학
 INSERT INTO user_tag_map (user_id, tag_id) VALUES (2, 5); -- 마케팅
 INSERT INTO user_tag_map (user_id, tag_id) VALUES (2, 7); -- 활동적인
 
--- PortfolioProject 테이블 더미 데이터 삽입
--- 1번 유저 (김철수: 백엔드 지망생)
-INSERT INTO portfolio_project (user_id, title, thumbnail_url, link_url, description, created_at, updated_at, is_public, view_count, sort_order) VALUES
-      (
-          1,
-          'CamNecT 백엔드 API 서버 구축',
-          'https://example.com/thumb/camnect.png',
-          'https://github.com/example/camnect',
-          'Spring Boot와 JPA를 활용한 캠퍼스 네트워킹 플랫폼의 백엔드 프로젝트입니다.',
-          NOW(),
-          NOW(),
-          true,
-          150,
-          1
-      ),
-      (
-          1,
-          '개인 기술 블로그 개발',
-          'https://example.com/thumb/blog.png',
-          'https://blog.example.com',
-          '학습한 내용을 정리하기 위해 직접 제작한 기술 블로그입니다.',
-          NOW(),
-          NOW(),
-          true,
-          45,
-          2
-      );
-
--- 2번 유저 (박민수: 경영학/마케팅 지망생)
-INSERT INTO portfolio_project (
-    user_id,
-    title,
-    thumbnail_url,
-    link_url,
-    description,
-    created_at,
-    updated_at,
-    is_public,
-    view_count,
-    sort_order
-) VALUES
-    (
-        2,
-        '2025 대학생 마케팅 공모전 출품작',
-        'https://example.com/thumb/contest.png',
-        'https://slideshare.com/pms/contest',
-        '식음료 브랜드의 MZ세대 타겟팅 마케팅 전략 기획서입니다.',
-        NOW(),
-        NOW(),
-        true,
-        88,
-        1
-    );
+INSERT INTO portfolio_project (user_id, title, thumbnail_url, description, start_date, end_date, is_public, is_favorite, review, created_at, updated_at) VALUES (1, 'CamNecT 백엔드 API 서버 구축', 'https://example.com/thumb/camnect.png', 'Spring Boot와 JPA를 활용한 캠퍼스 네트워킹 플랫폼 백엔드입니다.', '2025-09-01', '2025-12-20', true, true, '협업의 중요성을 깨달은 프로젝트였습니다.', '2026-01-22', '2026-01-22');
+INSERT INTO portfolio_project (user_id, title, thumbnail_url, description, start_date, end_date, is_public, is_favorite, review, created_at, updated_at) VALUES (1, '개인 기술 블로그 개발', 'https://example.com/thumb/blog.png', '학습 내용을 정리하기 위해 제작한 블로그입니다.', '2025-05-10', '2025-08-15', true, false, '직접 인프라를 구축하며 많이 배웠습니다.', '2026-01-22', '2026-01-22');
+INSERT INTO portfolio_project (user_id, title, thumbnail_url, description, start_date, end_date, is_public, is_favorite, review, created_at, updated_at) VALUES (2, '2025 대학생 마케팅 공모전 출품작', 'https://example.com/thumb/contest.png', 'MZ세대 타겟팅 마케팅 전략 기획서입니다.', '2025-11-01', '2025-11-30', true, true, '데이터 기반 의사결정의 필요성을 느꼈습니다.', '2026-01-22', '2026-01-22');
 
 -- Certificate 테이블 더미 데이터 삽입
 -- 1번 유저 (김철수: 백엔드 지망생 자격증)

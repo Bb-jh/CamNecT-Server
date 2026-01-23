@@ -1,9 +1,9 @@
 package CamNecT.CamNecT_Server.domain.portfolio.model;
 
+import CamNecT.CamNecT_Server.global.common.util.StringListConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,6 +11,9 @@ import java.util.List;
 @Table(name = "PortfolioProject")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+@Setter
 public class PortfolioProject {
 
     @Id
@@ -25,31 +28,61 @@ public class PortfolioProject {
     private String title;
 
     @Column(name = "thumbnail_url", length = 500)
-    private String thumbnailUrl = "기본이미지"; //기본이미지 추가 필요
+    @Builder.Default
+    private String thumbnailUrl = "기본이미지";
 
-    @Column(name = "link_url", length = 500)
-    private String linkUrl;
+    @Column(name = "start_date", nullable = false)
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
 
     @Lob
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Column(name = "is_public", nullable = false)
     private boolean isPublic;
 
-    @Column(name = "view_count")
-    private Integer viewCount = 0;
+    @Column(name = "is_favorite", nullable = false)
+    @Builder.Default
+    private boolean isFavorite = false;
 
-    @Column(name = "sort_order")
-    private Integer sortOrder;
+    @Column(name = "project_field", nullable = false)
+    @Convert(converter = StringListConverter.class)
+    private List<String> projectField = new ArrayList<>();
 
-    // 양방향 연관관계 설정
+    @Column(name = "assigned_role", nullable = false)
+    @Convert(converter = StringListConverter.class)
+    private List<String> assignedRole = new ArrayList<>();
+
+    @Column(name = "tech_stack", nullable = false)
+    @Convert(converter = StringListConverter.class)
+    private List<String> techStack = new ArrayList<>();
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String review;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDate createdAt; // 생성일 (DATE 타입)
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDate updatedAt; // 수정일 (DATE 타입)
+
     @OneToMany(mappedBy = "portfolioProject", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PortfolioAsset> assets = new ArrayList<>();
+
+    public void updateThumbnail(String url) {
+        this.thumbnailUrl = url;
+    }
+
+    public void updateInfo(String title, String description, String review, LocalDate startDate, LocalDate endDate) {
+        this.title = title;
+        this.description = description;
+        this.review = review;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.updatedAt = LocalDate.now();
+    }
 }
