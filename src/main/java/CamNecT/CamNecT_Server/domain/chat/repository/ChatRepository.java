@@ -1,0 +1,11 @@
+package CamNecT.CamNecT_Server.domain.chat.repository;
+
+import CamNecT.CamNecT_Server.domain.chat.model.Chat;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface ChatRepository extends JpaRepository<Chat, Long> {
+
+    List<Chat> findAllByRoomId(Long roomId);
+}
