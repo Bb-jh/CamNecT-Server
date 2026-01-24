@@ -50,14 +50,17 @@ public class PortfolioProject {
 
     @Column(name = "project_field", nullable = false)
     @Convert(converter = StringListConverter.class)
+    @Builder.Default
     private List<String> projectField = new ArrayList<>();
 
     @Column(name = "assigned_role", nullable = false)
     @Convert(converter = StringListConverter.class)
+    @Builder.Default
     private List<String> assignedRole = new ArrayList<>();
 
     @Column(name = "tech_stack", nullable = false)
     @Convert(converter = StringListConverter.class)
+    @Builder.Default
     private List<String> techStack = new ArrayList<>();
 
     @Lob
@@ -71,6 +74,7 @@ public class PortfolioProject {
     private LocalDate updatedAt; // 수정일 (DATE 타입)
 
     @OneToMany(mappedBy = "portfolioProject", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<PortfolioAsset> assets = new ArrayList<>();
 
     public void updateThumbnail(String url) {
