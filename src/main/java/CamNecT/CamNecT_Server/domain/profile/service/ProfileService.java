@@ -8,18 +8,19 @@ import CamNecT.CamNecT_Server.domain.experience.dto.response.ExperienceResponse;
 import CamNecT.CamNecT_Server.domain.experience.repository.ExperienceRepository;
 import CamNecT.CamNecT_Server.domain.portfolio.dto.response.PortfolioPreviewResponse;
 import CamNecT.CamNecT_Server.domain.portfolio.repository.PortfolioRepository;
+import CamNecT.CamNecT_Server.domain.profile.dto.request.UpdateProfileTagsRequest;
+import CamNecT.CamNecT_Server.domain.profile.dto.request.UpdateProfileBasicsRequest;
+import CamNecT.CamNecT_Server.domain.profile.dto.response.ProfileStatusResponse;
 import CamNecT.CamNecT_Server.domain.profile.dto.response.ProfileResponse;
-import CamNecT.CamNecT_Server.domain.users.model.UserProfile;
-import CamNecT.CamNecT_Server.domain.users.model.Users;
-import CamNecT.CamNecT_Server.domain.users.repository.UserFollowRepository;
-import CamNecT.CamNecT_Server.domain.users.repository.UserProfileRepository;
-import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
-import CamNecT.CamNecT_Server.domain.users.repository.UserTagMapRepository;
+import CamNecT.CamNecT_Server.domain.users.model.*;
+import CamNecT.CamNecT_Server.domain.users.repository.*;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
+import CamNecT.CamNecT_Server.global.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -35,8 +36,9 @@ public class ProfileService {
     private final PortfolioRepository portfolioRepository;
     private final UserTagMapRepository userTagMapRepository;
     private final EducationRepository educationRepository;
+    private final TagRepository tagRepository;
 
-
+    @Transactional(readOnly = true)
     public ProfileResponse getUserProfile(Long profileUserId) {
 
         Users user = userRepository.findByUserId(profileUserId).orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
@@ -75,4 +77,65 @@ public class ProfileService {
                 //isFollowing
         );
     }
+
+    // =========================================================
+    // 프로필이미지, 메모 등 저장
+    // =========================================================
+    @Transactional
+    public ProfileStatusResponse updateBasicsSettings(Long userId, UpdateProfileBasicsRequest req) {
+
+        Users user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        requireOnboardingPending(user);
+
+        UserProfile userProfile = userProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        userProfile.updateOnboardingProfile(req.bio(), req.profileImageUrl());
+
+        return new ProfileStatusResponse(user.getStatus());
+    }
+
+    // =========================================================
+    // 분야별 태그(관심분야 태그) 선택
+    // =========================================================
+    @Transactional
+    public ProfileStatusResponse updateProfileTags(Long userId, UpdateProfileTagsRequest req) {
+
+        Users user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        requireOnboardingPending(user);
+
+        List<Long> tagIds = (req.tagIds() == null) ? List.of() : req.tagIds().stream().distinct().toList();
+
+        // 존재 검증 (스킵 허용이면 empty OK)
+        if (!tagIds.isEmpty()) {
+            var tags = tagRepository.findAllById(tagIds);
+            if (tags.size() != tagIds.size()) {
+                throw new IllegalArgumentException("존재하지 않는 태그가 포함되어 있습니다.");
+            }
+        }
+
+        // 프로필 노출 태그 저장(user_tag_map)
+        userTagMapRepository.deleteAllByUserId(userId);
+        userTagMapRepository.saveAll(
+                tagIds.stream()
+                        .map(tid -> UserTagMap.builder().userId(userId).tagId(tid).build())
+                        .toList()
+        );
+        return new ProfileStatusResponse(user.getStatus());
+    }
+
+    private void requireOnboardingPending(Users user) {
+        if (user.getStatus() == UserStatus.SUSPENDED) {
+            throw new IllegalStateException("정지된 계정입니다.");
+        }
+        if (user.getStatus() == UserStatus.EMAIL_PENDING) {
+            throw new IllegalStateException("이메일 인증이 필요합니다.");
+        }
+    }
+
+
 }

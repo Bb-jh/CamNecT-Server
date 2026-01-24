@@ -4,6 +4,8 @@ import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import CamNecT.CamNecT_Server.global.tag.model.TagAttributeName;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,9 +23,12 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
 
     // 중복 방지용(시드/생성)
     Optional<Tag> findByAttribute_NameAndName(TagAttributeName attributeName, String name);
+
     boolean existsByAttribute_NameAndName(TagAttributeName attributeName, String name);
 
-    //tagId들을 통해 실제 Tag 엔티티들을 가져옴
-    List<Tag> findAllByIdIn(List<Long> tagIds);
+    @Query("SELECT utm.userId, t FROM UserTagMap utm " +
+            "JOIN Tag t ON utm.tagId = t.id " +
+            "WHERE utm.userId IN :userIds AND t.active = true")
+    List<Object[]> findTagsWithUserIdByUserIdIn(@Param("userIds") List<Long> userIds);
 }
 

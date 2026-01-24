@@ -3,12 +3,11 @@ package CamNecT.CamNecT_Server.domain.users.repository;
 import CamNecT.CamNecT_Server.domain.users.model.UserProfile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,12 +27,13 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
     Page<UserProfile> findByAnyTagIds(@Param("tagIds") List<Long> tagIds, Pageable pageable);
 
 
-    @Query("SELECT up FROM UserProfile up " +
-            "JOIN UserTagMap utm ON up.userId = utm.userId " +
-            "WHERE utm.tagId IN :tagIds " +
-            "GROUP BY up.userId " +
-            "HAVING COUNT(utm.tagId) = :tagCount")
-    Page<UserProfile> findByAllTagIds(@Param("tagIds") List<Long> tagIds,
-                                      @Param("tagCount") Long tagCount,
-                                      Pageable pageable);
+    @Query("""
+        SELECT up FROM UserProfile up
+        WHERE EXISTS ( SELECT 1 FROM UserTagMap utm
+        WHERE utm.userId = up.userId
+        AND utm.tagId IN :tagIds GROUP BY utm.userId
+        HAVING COUNT(DISTINCT utm.tagId) = :tagCount
+        )
+    """)
+    Slice<UserProfile> findByAllTagIds(List<Long> tagIds, Long tagCount, Pageable pageable);
 }
