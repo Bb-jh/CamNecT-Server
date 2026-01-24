@@ -13,21 +13,22 @@ import java.time.LocalDateTime;
 @Table(
         name = "email_verification_tokens",
         indexes = {
-                @Index(name = "idx_evt_token_hash", columnList = "token_hash"),
-                @Index(name = "idx_evt_user_id", columnList = "user_id")
+                @Index(name = "idx_evt_user_used", columnList = "user_id, used_at")
         }
 )
 public class EmailVerificationToken {
+    private static final int MAX_ATTEMPTS = 5;
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private Users user;
 
-    @Column(name = "token_hash", nullable = false, length = 64)
-    private String tokenHash; // SHA-256 hex
+    @Column(name = "code_hash", nullable = false, length = 64)
+    private String codeHash;
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
@@ -35,24 +36,34 @@ public class EmailVerificationToken {
     @Column(name = "used_at")
     private LocalDateTime usedAt;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "attempt_count", nullable = false)
+    private int attemptCount;
 
-    public EmailVerificationToken(Users user, String tokenHash, LocalDateTime expiresAt) {
+    protected EmailVerificationToken(Users user, String codeHash, LocalDateTime expiresAt) {
         this.user = user;
-        this.tokenHash = tokenHash;
+        this.codeHash = codeHash;
         this.expiresAt = expiresAt;
+        this.usedAt = null;
+        this.attemptCount = 0;
     }
 
-    public boolean isExpired() {
-        return expiresAt.isBefore(LocalDateTime.now());
+    public static EmailVerificationToken issue(Users user, String rawCode, long expirationMinutes) {
+        return new EmailVerificationToken(
+                user,
+                EmailTokenUtil.sha256Hex(rawCode),
+                LocalDateTime.now().plusMinutes(expirationMinutes)
+        );
     }
 
-    public boolean isUsed() {
-        return usedAt != null;
-    }
+    public boolean isUsed() { return usedAt != null; }
+    public boolean isExpired() { return LocalDateTime.now().isAfter(expiresAt); }
+    public boolean isLocked() { return attemptCount >= MAX_ATTEMPTS; }
 
-    public void markUsed() {
-        this.usedAt = LocalDateTime.now();
+    public void markUsed() { this.usedAt = LocalDateTime.now(); }
+
+    public void increaseAttempt() { this.attemptCount++; }
+
+    public boolean matchesCode(String rawCode) {
+        return EmailTokenUtil.sha256Hex(rawCode).equals(this.codeHash);
     }
 }

@@ -1,6 +1,8 @@
 package CamNecT.CamNecT_Server.domain.verification.email.controller;
 
+import CamNecT.CamNecT_Server.domain.verification.email.dto.VerifyEmailCodeRequest;
 import CamNecT.CamNecT_Server.domain.verification.email.service.EmailVerificationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -12,13 +14,9 @@ public class EmailVerificationController {
 
     private final EmailVerificationService emailVerificationService;
 
-    @GetMapping("/email/verify")
+    @PostMapping("/email/verify-code")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void verify(@RequestParam("token") String token) {
-        emailVerificationService.verifyEmail(token);
+    public void verifyCode(@RequestBody @Valid VerifyEmailCodeRequest req) {
+        emailVerificationService.verifyEmailCode(req.userId(), req.code());
     }
-
-    //TODO : email 재인증(토큰 재발급)등 api 추가 필요성 보임.
-
-    //관리자가 직접 재학증명서 인증하는 로직은 .domain.verification에서 처리
 }
