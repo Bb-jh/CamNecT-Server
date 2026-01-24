@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>채팅방</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        .chat-container { width: 500px; margin: 0 auto; border: 1px solid #ccc; padding: 20px; }
+        .message-area { height: 400px; overflow-y: scroll; border: 1px solid #eee; padding: 10px; margin-bottom: 10px; background: #f9f9f9;}
+        .message { margin-bottom: 5px; }
+        .sender { font-weight: bold; color: blue; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <h2 th:text="${roomName} + ' 채팅방'"></h2>
+
+    <div id="messageArea" class="message-area">
+        <div th:each="chat : ${chatList}" class="message">
+            <span class="sender" th:text="${chat.sender} + ' : '"></span>
+            <span th:text="${chat.message}"></span>
+        </div>
+    </div>
+
+    <div>
+        <input type="text" id="sender" placeholder="닉네임" style="width: 100px;">
+        <input type="text" id="message" placeholder="메시지 입력" style="width: 250px;" onkeypress="if(event.keyCode==13) sendMessage()">
+        <button onclick="sendMessage()">전송</button>
+    </div>
+    <br>
+    <a href="/roomList">나가기 (목록으로)</a>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var roomId = [[${roomId}]]; // 타임리프 변수 가져오기
+    var stompClient = null;
+
+    // 페이지 로드 시 바로 연결
+    window.onload = function() {
+        connect();
+        // 스크롤 맨 아래로
+        var chatArea = document.getElementById("messageArea");
+        chatArea.scrollTop = chatArea.scrollHeight;
+    };
+
+    function connect() {
+        // WebSocketConfig에 설정한 엔드포인트 (/ws-stomp)
+        var socket = new SockJS('/ws-stomp');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+
+            // 구독 (Subscribe): /room/{roomId} 로 오는 메시지 듣기
+            stompClient.subscribe('/room/' + roomId, function (chatMessage) {
+                showChat(JSON.parse(chatMessage.body));
+            });
+        });
+    }
+
+    function sendMessage() {
+        var sender = document.getElementById("sender").value;
+        var message = document.getElementById("message").value;
+
+        if(!sender || !message) {
+            alert("닉네임과 내용을 입력하세요.");
+            return;
+        }
+
+        // 발행 (Publish): /send/{roomId} 로 메시지 보내기
+        // (Config prefix: /send + Controller mapping: /{roomId})
+        stompClient.send("/send/" + roomId, {}, JSON.stringify({
+            'sender': sender,
+            'senderEmail': 'user@example.com', // 임시 이메일
+            'message': message,
+            'roomId': roomId
+        }));
+
+        document.getElementById("message").value = ''; // 입력창 비우기
+    }
+
+    // 받은 메시지 화면에 추가
+    function showChat(message) {
+        var messageArea = document.getElementById("messageArea");
+        var messageElement = document.createElement("div");
+        messageElement.className = "message";
+
+        // HTML 구조 생성: <span class="sender">이름 : </span> <span>내용</span>
+        var senderSpan = document.createElement("span");
+        senderSpan.className = "sender";
+        senderSpan.innerText = message.sender + " : ";
+
+        var contentSpan = document.createElement("span");
+        contentSpan.innerText = message.message;
+
+        messageElement.appendChild(senderSpan);
+        messageElement.appendChild(contentSpan);
+
+        messageArea.appendChild(messageElement);
+
+        // 스크롤 맨 아래로 내리기
+        messageArea.scrollTop = messageArea.scrollHeight;
+    }
+    /*]]>*/
+</script>
+
+</body>
+</html>
