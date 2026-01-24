@@ -11,6 +11,8 @@ import CamNecT.CamNecT_Server.domain.community.repository.Comments.AcceptedComme
 import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostStatsRepository;
 import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostTagsRepository;
 import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostsRepository;
+import CamNecT.CamNecT_Server.global.common.exception.CustomException;
+import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -39,15 +41,21 @@ public class PostQueryServiceImpl implements PostQueryService {
 
         Long cv = cursorValue;
         if (cv == null && cursorId != null && sort != Sort.LATEST) {
-            cv = postStatsRepository.findByPost_Id(cursorId)
-                    .map(ps -> switch (sort) {
-                        case RECOMMENDED -> ps.getHotScore();
-                        case LIKE        -> ps.getLikeCount();
-                        case BOOKMARK    -> ps.getBookmarkCount();
-                        // 여기 오지 않음
-                        default -> throw new IllegalStateException("Unexpected value: " + sort);
-                    })
-                    .orElse(0L);
+
+            // cursorId 자체가 존재하는지 먼저 확인하고 싶으면(선택)
+            if (!postsRepository.existsById(cursorId)) {
+                throw new CustomException(ErrorCode.INVALID_CURSOR);
+            }
+
+            PostStats ps = postStatsRepository.findByPost_Id(cursorId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.POST_STATS_NOT_FOUND));
+
+            cv = switch (sort) {
+                case RECOMMENDED -> ps.getHotScore();
+                case LIKE        -> ps.getLikeCount();
+                case BOOKMARK    -> ps.getBookmarkCount();
+                default -> throw new CustomException(ErrorCode.INTERNAL_ERROR); // 사실상 불가
+            };
         }
 
         Slice<Posts> slice = switch (sort) {
