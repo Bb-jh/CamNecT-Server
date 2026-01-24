@@ -1,6 +1,7 @@
 package CamNecT.CamNecT_Server.domain.community.model.Posts;
 
 import CamNecT.CamNecT_Server.domain.community.model.Boards;
+import CamNecT.CamNecT_Server.domain.community.model.enums.PostAccessType;
 import CamNecT.CamNecT_Server.domain.community.model.enums.PostStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -43,6 +44,14 @@ public class Posts {
     @Column(name = "status", nullable = false, length = 20)
     private PostStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "access_type", nullable = false)
+    @Builder.Default
+    private PostAccessType accessType = PostAccessType.FREE;
+
+    @Column(name = "required_points")
+    private Integer requiredPoints; // accessType=POINT_REQUIRED일 때만 사용
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -78,5 +87,10 @@ public class Posts {
     public void deleteSoft() {
         this.status = PostStatus.DELETED;
         this.deletedAt = LocalDateTime.now();
+    }
+
+    public void applyAccess(PostAccessType accessType, Integer requiredPoints) {
+        this.accessType = (accessType == null) ? PostAccessType.FREE : accessType;
+        this.requiredPoints = requiredPoints;
     }
 }

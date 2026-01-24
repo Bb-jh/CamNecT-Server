@@ -7,7 +7,16 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "PointTransaction")
+@Table(
+        name = "PointTransaction",
+        indexes = {
+                @Index(name = "idx_point_tx_user", columnList = "user_id"),
+                @Index(name = "idx_point_tx_event_key", columnList = "event_key")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_point_tx_event_key", columnNames = {"event_key"})
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor

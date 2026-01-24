@@ -1,9 +1,6 @@
 package CamNecT.CamNecT_Server.domain.point.service;
 
-import CamNecT.CamNecT_Server.domain.point.model.PointSource;
-import CamNecT.CamNecT_Server.domain.point.model.PointTransaction;
-import CamNecT.CamNecT_Server.domain.point.model.PointWallet;
-import CamNecT.CamNecT_Server.domain.point.model.TransactionType;
+import CamNecT.CamNecT_Server.domain.point.model.*;
 import CamNecT.CamNecT_Server.domain.point.repository.PointTransactionRepository;
 import CamNecT.CamNecT_Server.domain.point.repository.PointWalletRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
@@ -25,77 +22,63 @@ public class PointService {
     //채택댓글 포인트 획득
     @Transactional
     public void earnPointByCommentSelection(Long userId, Long postId, int amount) {
-        changePoint(
-                userId,
-                amount,
-                TransactionType.EARN,
-                PointSource.COMMENT_SELECTION,
-                postId,
-                null
-        );
+        changePoint(userId, amount, TransactionType.EARN,
+                new PointEvent(PointSource.COMMENT_SELECTION, postId, null,
+                        "COMMENT_SELECTION:" + userId + ":" + postId));
     }
 
-    //커피챗 수락 포인트 획득
     @Transactional
     public void earnPointByCoffeeChatAcceptance(Long userId, Long requestId, int amount) {
-        changePoint(
-                userId,
-                amount,
-                TransactionType.EARN,
-                PointSource.COFFEECHAT_ACCEPTANCE,
-                null,
-                requestId
-        );
-    }
-
-    //포인트 사용
-    @Transactional
-    public void spendPoint(Long userId, int amount, PointSource pointSource) {
-        changePoint(
-                userId,
-                amount,
-                TransactionType.SPEND,
-                pointSource,
-                null,
-                null
-        );
+        changePoint(userId, amount, TransactionType.EARN,
+                new PointEvent(PointSource.COFFEECHAT_ACCEPTANCE, null, requestId,
+                        "COFFEECHAT_ACCEPTANCE:" + userId + ":" + requestId));
     }
 
     @Transactional
-    public void changePoint(
-            Long userId,
-            int amount,
-            TransactionType transactionType,
-            PointSource sourceType,
-            Long postId,
-            Long requestId
-    ) {
+    public void spendPoint(Long userId, int amount, PointEvent event) {
+        changePoint(userId, amount, TransactionType.SPEND, event);
+    }
+
+    @Transactional
+    public void changePoint(Long userId, int amount, TransactionType type, PointEvent event) {
+        if (event == null || event.source() == null) {
+            throw new IllegalArgumentException("PointEvent/source is required");
+        }
+
+
         try {
+            if (event.eventKey() != null && transactionRepository.existsByEventKey(event.eventKey())) {
+                return;
+            }
+
             PointWallet wallet = getOrCreateWallet(userId);
 
-            if (transactionType == TransactionType.SPEND && wallet.getBalance() < amount) {
+            if (type == TransactionType.SPEND && wallet.getBalance() < amount) {
                 throw new CustomException(ErrorCode.INSUFFICIENT_POINT);
             }
 
-            int signedAmount = transactionType == TransactionType.SPEND ? -amount : amount;
+            int signedAmount = type == TransactionType.SPEND ? -amount : amount;
             wallet.updateBalance(signedAmount);
 
-            PointTransaction transaction = PointTransaction.builder()
+            PointTransaction tx = PointTransaction.builder()
                     .userId(userId)
-                    .postId(postId)
-                    .requestId(requestId)
+                    .postId(event.postId())
+                    .requestId(event.requestId())
                     .pointChange(signedAmount)
-                    .transactionType(transactionType)
-                    .sourceType(sourceType)
+                    .transactionType(type)
+                    .sourceType(event.source())
+                    .eventKey(event.eventKey())
                     .balanceAfter(wallet.getBalance())
                     .build();
 
-            transactionRepository.save(transaction);
-
+            transactionRepository.save(tx);
             walletRepository.flush();
 
         } catch (OptimisticLockException e) {
             throw new CustomException(ErrorCode.CONFLICT);
+        } catch (DataIntegrityViolationException e) {
+            if (event.eventKey() != null) return; // eventKey 유니크 충돌이면 멱등 처리
+            throw e;
         }
     }
 
@@ -114,5 +97,12 @@ public class PointService {
                                 .orElseThrow();
                     }
                 });
+    }
+
+    @Transactional(readOnly = true)
+    public int getBalance(Long userId) {
+        return walletRepository.findByUserId(userId)
+                .map(PointWallet::getBalance)
+                .orElse(0);
     }
 }

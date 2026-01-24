@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -50,7 +51,10 @@ public class SignupService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "USERNAME_ALREADY_EXISTS");
         }
 
-        // 3) Users 저장 (EMAIL_PENDING)
+        // 3)비밀번호 체크
+        validatePassword(req.password());
+
+        // 4) Users 저장 (EMAIL_PENDING)
         Users user = Users.builder()
                 .email(req.email())
                 .username(req.username())
@@ -85,5 +89,20 @@ public class SignupService {
         emailSender.sendEmailVerification(user.getEmail(), verifyUrl);
 
         return new SignupResponse(user.getUserId(), user.getStatus().name());
+    }
+
+
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile(
+            "^(?=.{8,16}$)" +            // 8~16
+                    "(?=.*[A-Z])" +              // 대문자 1+
+                    "(?=.*[a-z])" +              // 소문자 1+
+                    "(?=.*\\d)" +                // 숫자 1+
+                    "[A-Za-z\\d!@#$%^&*()_+\\[\\]{}\\\\|;:'\",.<>/?`~=-]+$" // 허용문자(ASCII 키보드)
+    );
+
+    private void validatePassword(String pw) {
+        if (pw == null || !PASSWORD_PATTERN.matcher(pw).matches()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_PASSWORD");
+        }
     }
 }
