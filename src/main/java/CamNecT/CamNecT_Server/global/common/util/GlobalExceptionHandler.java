@@ -1,7 +1,8 @@
 package CamNecT.CamNecT_Server.global.common.util;
 
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.BaseErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
 import CamNecT.CamNecT_Server.global.common.response.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.support.MethodArgumentNotValidException;
@@ -13,7 +14,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustom(CustomException e) {
-        ErrorCode ec = e.getErrorCode();
+        BaseErrorCode ec = e.getErrorCode();
         return ResponseEntity.status(ec.getHttpStatus())
                 .body(new ErrorResponse(ec.getHttpStatus().value(), ec.getCode(), ec.getMessage()));
     }

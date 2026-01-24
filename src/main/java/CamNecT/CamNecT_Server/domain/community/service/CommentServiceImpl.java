@@ -14,7 +14,7 @@ import CamNecT.CamNecT_Server.domain.community.repository.Comments.CommentsRepos
 import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostStatsRepository;
 import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostsRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;

@@ -1,13 +1,12 @@
-package CamNecT.CamNecT_Server.global.common.response;
+package CamNecT.CamNecT_Server.global.common.response.errorcode;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public enum ErrorCode {
+public enum ErrorCode implements BaseErrorCode {
     // 500xx
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 50000, "서버 내부 오류가 발생했습니다."),
     POST_STATS_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, 50010, "게시글 통계 데이터가 누락되었습니다."),
@@ -45,6 +44,7 @@ public enum ErrorCode {
     PARENT_COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, 40412, "부모 댓글을 찾을 수 없습니다."),
     BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, 40420, "게시판을 찾을 수 없습니다."),
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND, 40421, "태그를 찾을 수 없습니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, 44402, "유저를 찾을 수 없습니다."),
 
     // 409xx (상태 충돌/규칙 위반)
     CONFLICT(HttpStatus.CONFLICT, 40900, "충돌이 발생하였습니다. 다시 시도해주세요."),

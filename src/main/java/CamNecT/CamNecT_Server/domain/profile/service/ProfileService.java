@@ -15,7 +15,7 @@ import CamNecT.CamNecT_Server.domain.profile.dto.response.ProfileResponse;
 import CamNecT.CamNecT_Server.domain.users.model.*;
 import CamNecT.CamNecT_Server.domain.users.repository.*;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import CamNecT.CamNecT_Server.global.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;

@@ -4,7 +4,7 @@ import CamNecT.CamNecT_Server.domain.point.model.*;
 import CamNecT.CamNecT_Server.domain.point.repository.PointTransactionRepository;
 import CamNecT.CamNecT_Server.domain.point.repository.PointWalletRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
 import jakarta.persistence.OptimisticLockException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;

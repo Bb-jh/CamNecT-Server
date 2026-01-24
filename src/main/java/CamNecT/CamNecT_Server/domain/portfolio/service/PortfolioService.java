@@ -8,7 +8,7 @@ import CamNecT.CamNecT_Server.domain.portfolio.model.PortfolioProject;
 import CamNecT.CamNecT_Server.domain.portfolio.repository.PortfolioAssetRepository;
 import CamNecT.CamNecT_Server.domain.portfolio.repository.PortfolioRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
 import CamNecT.CamNecT_Server.global.common.service.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
