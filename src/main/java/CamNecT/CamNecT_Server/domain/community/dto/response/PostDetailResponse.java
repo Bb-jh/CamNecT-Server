@@ -1,6 +1,7 @@
 package CamNecT.CamNecT_Server.domain.community.dto.response;
 
 import CamNecT.CamNecT_Server.domain.community.model.enums.BoardCode;
+import CamNecT.CamNecT_Server.domain.community.model.enums.ContentAccessStatus;
 
 import java.util.List;
 
@@ -15,5 +16,8 @@ public record PostDetailResponse(
         long likeCount,
         boolean likedByMe,
         Long acceptedCommentId,
-        List<Long> tagIds
+        List<Long> tagIds,
+        ContentAccessStatus accessStatus,
+        Integer requiredPoints,
+        Integer myPoints
 ) {}

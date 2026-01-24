@@ -98,4 +98,13 @@ public class PostController {
     ) {
         return ApiResponse.success(postService.toggleBookmark(userId, postId));
     }
+
+    //글 구매
+    @PostMapping("/{postId}/access/purchase")
+    public ApiResponse<PurchasePostAccessResponse> purchaseAccess(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long postId
+    ) {
+        return ApiResponse.success(postService.purchasePostAccess(userId, postId));
+    }
 }

@@ -2,22 +2,21 @@ package CamNecT.CamNecT_Server.domain.community.service;
 
 import CamNecT.CamNecT_Server.domain.community.dto.request.CreatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.request.UpdatePostRequest;
-import CamNecT.CamNecT_Server.domain.community.dto.response.CreatePostResponse;
-import CamNecT.CamNecT_Server.domain.community.dto.response.PostDetailResponse;
-import CamNecT.CamNecT_Server.domain.community.dto.response.ToggleBookmarkResponse;
-import CamNecT.CamNecT_Server.domain.community.dto.response.ToggleLikeResponse;
+import CamNecT.CamNecT_Server.domain.community.dto.response.*;
 import CamNecT.CamNecT_Server.domain.community.event.CommentAcceptedEvent;
 import CamNecT.CamNecT_Server.domain.community.model.*;
 import CamNecT.CamNecT_Server.domain.community.model.Comments.AcceptedComments;
 import CamNecT.CamNecT_Server.domain.community.model.Comments.Comments;
 import CamNecT.CamNecT_Server.domain.community.model.Posts.*;
-import CamNecT.CamNecT_Server.domain.community.model.enums.BoardCode;
-import CamNecT.CamNecT_Server.domain.community.model.enums.CommentStatus;
-import CamNecT.CamNecT_Server.domain.community.model.enums.PostStatus;
+import CamNecT.CamNecT_Server.domain.community.model.enums.*;
 import CamNecT.CamNecT_Server.domain.community.repository.*;
 import CamNecT.CamNecT_Server.domain.community.repository.Comments.AcceptedCommentsRepository;
 import CamNecT.CamNecT_Server.domain.community.repository.Comments.CommentsRepository;
 import CamNecT.CamNecT_Server.domain.community.repository.Posts.*;
+import CamNecT.CamNecT_Server.domain.point.model.PointEvent;
+import CamNecT.CamNecT_Server.domain.point.service.PointService;
+import CamNecT.CamNecT_Server.global.common.exception.CustomException;
+import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import CamNecT.CamNecT_Server.global.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
@@ -47,10 +46,11 @@ public class PostServiceImpl implements PostService {
 
     private final PostAttachmentsRepository postAttachmentsRepository;
     private final PostAttachmentsService postAttachmentsService;
-
     private final PostBookmarksRepository postBookmarksRepository;
-
+    private final PostAccessRepository postAccessRepository;
     private final ApplicationEventPublisher eventPublisher;
+
+    private final PointService pointService;
 
     @Transactional
     @Override
@@ -61,7 +61,21 @@ public class PostServiceImpl implements PostService {
         Boards board = boardsRepository.findByCode(req.boardCode())
                 .orElseThrow(() -> new IllegalArgumentException("board not found: " + req.boardCode()));
 
+        PostAccessType accessType = (req.accessType() == null) ? PostAccessType.FREE : req.accessType();
+        Integer requiredPoints = req.requiredPoints();
+
+        if (accessType == PostAccessType.POINT_REQUIRED) {
+            if (requiredPoints == null || requiredPoints <= 0) {
+                throw new CustomException(ErrorCode.BAD_REQUEST);
+            }
+        } else {
+            requiredPoints = null; // FREE면 비용 제거
+        }
+
         Posts post = Posts.create(board, userId, req.title(), req.content(), Boolean.TRUE.equals(req.anonymous()));
+
+        post.applyAccess(accessType, requiredPoints);
+
         Posts saved = postsRepository.save(post);
 
         // stats 생성(필수)
@@ -178,18 +192,49 @@ public class PostServiceImpl implements PostService {
                 .map(ac -> ac.getComment().getId())
                 .orElse(null);
 
+        ContentAccessStatus accessStatus = null;
+        Integer requiredPoints = null;
+        Integer myPoints = null;
+
+        if (post.getAccessType() == PostAccessType.POINT_REQUIRED) {
+            requiredPoints = post.getRequiredPoints();
+
+            // 서비스에서 정합성 보장(모델은 단순하게)
+            if (requiredPoints == null || requiredPoints <= 0) {
+                throw new IllegalStateException("invalid requiredPoints for POINT_REQUIRED post: " + postId);
+            }
+
+            if (userId == null) {
+                accessStatus = ContentAccessStatus.LOGIN_REQUIRED;
+            } else if (userId.equals(post.getUserId())) {
+                accessStatus = ContentAccessStatus.GRANTED; // 작성자는 무료
+            } else if (postAccessRepository.existsByPost_IdAndUserId(postId, userId)) {
+                accessStatus = ContentAccessStatus.GRANTED; // 구매함
+            } else {
+                myPoints = pointService.getBalance(userId);
+                accessStatus = (myPoints >= requiredPoints)
+                        ? ContentAccessStatus.NEED_PURCHASE
+                        : ContentAccessStatus.INSUFFICIENT_POINTS;
+            }
+        }
+
+        String content = (accessStatus == ContentAccessStatus.GRANTED) ? post.getContent() : null;
+
         return new PostDetailResponse(
                 post.getId(),
                 post.getBoard().getCode(),
                 post.getTitle(),
-                post.getContent(),
+                content,
                 post.isAnonymous(),
                 post.getUserId(),
                 stats.getViewCount(),
                 stats.getLikeCount(),
                 likedByMe,
                 acceptedCommentId,
-                tagIds
+                tagIds,
+                accessStatus,
+                requiredPoints,
+                myPoints
         );
     }
 
@@ -283,10 +328,64 @@ public class PostServiceImpl implements PostService {
         postStatsRepository.findByPost_Id(postId).ifPresent(PostStats::touch);
     }
 
+
+    // =========================
+    // 정보글 구매(열람권 생성)
+    // =========================
+    @Transactional
+    public PurchasePostAccessResponse purchasePostAccess(Long userId, Long postId) {
+
+        if (userId == null) {
+            throw new IllegalArgumentException("login required");
+        }
+
+        Posts post = postsRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("post not found: " + postId));
+
+        if (post.getStatus() != PostStatus.PUBLISHED) {
+            throw new IllegalArgumentException("post not published");
+        }
+
+        // 정보글이 아니면 구매 불필요
+        if (post.getAccessType() != PostAccessType.POINT_REQUIRED) {
+            int bal = pointService.getBalance(userId);
+            return new PurchasePostAccessResponse(postId, ContentAccessStatus.GRANTED, bal);
+        }
+
+        Integer cost = post.getRequiredPoints();
+        if (cost == null || cost <= 0) {
+            throw new IllegalStateException("invalid requiredPoints for POINT_REQUIRED post: " + postId);
+        }
+
+        // 작성자는 무료
+        if (userId.equals(post.getUserId())) {
+            int bal = pointService.getBalance(userId);
+            return new PurchasePostAccessResponse(postId, ContentAccessStatus.GRANTED, bal);
+        }
+
+        // 이미 구매했으면 멱등 처리
+        if (postAccessRepository.existsByPost_IdAndUserId(postId, userId)) {
+            int bal = pointService.getBalance(userId);
+            return new PurchasePostAccessResponse(postId, ContentAccessStatus.GRANTED, bal);
+        }
+
+        // ✅ 포인트 차감 (eventKey로 멱등)
+        pointService.spendPoint(userId, cost, PointEvent.postAccess(userId, postId));
+
+        // ✅ 열람권 저장 (유니크키로 멱등)
+        try {
+            postAccessRepository.save(PostAccess.of(userId, post, cost));
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // uk(user_id, post_id) 충돌이면 이미 저장된 것으로 간주
+        }
+
+        int remaining = pointService.getBalance(userId);
+        return new PurchasePostAccessResponse(postId, ContentAccessStatus.GRANTED, remaining);
+    }
+
     private PostStats getOrCreateStats(Posts post) {
         return postStatsRepository.findByPost_Id(post.getId())
                 .orElseGet(() -> postStatsRepository.save(PostStats.init(post)));
     }
-
 
 }
