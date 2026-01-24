@@ -6,11 +6,9 @@ import CamNecT.CamNecT_Server.domain.verification.email.event.EmailVerificationC
 import CamNecT.CamNecT_Server.domain.verification.email.model.EmailTokenUtil;
 import CamNecT.CamNecT_Server.domain.verification.email.model.EmailVerificationToken;
 import CamNecT.CamNecT_Server.domain.verification.email.repository.EmailVerificationTokenRepository;
-import CamNecT.CamNecT_Server.global.jwt.TokenUtil;
 import CamNecT.CamNecT_Server.domain.users.model.UserStatus;
 import CamNecT.CamNecT_Server.domain.users.model.Users;
 import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
-import CamNecT.CamNecT_Server.global.mail.EmailSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,9 +31,6 @@ public class SignupService {
 
     @Value("${app.auth.email-verification.expiration-minutes:30}")
     private long expirationMinutes;
-
-    @Value("${app.auth.email-verification.verify-base-url}")
-    private String verifyBaseUrl;
 
     @Transactional
     public SignupResponse signup(SignupRequest req) {
