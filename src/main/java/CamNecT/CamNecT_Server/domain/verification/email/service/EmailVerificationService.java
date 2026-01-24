@@ -2,6 +2,7 @@ package CamNecT.CamNecT_Server.domain.verification.email.service;
 
 import CamNecT.CamNecT_Server.domain.users.model.UserStatus;
 import CamNecT.CamNecT_Server.domain.users.model.Users;
+import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.domain.verification.email.model.EmailVerificationToken;
 import CamNecT.CamNecT_Server.domain.verification.email.repository.EmailVerificationTokenRepository;
 import CamNecT.CamNecT_Server.global.jwt.TokenUtil;
@@ -16,22 +17,34 @@ import org.springframework.web.server.ResponseStatusException;
 public class EmailVerificationService {
 
     private final EmailVerificationTokenRepository tokenRepository;
+    private final UserRepository userRepository;
 
     @Transactional
-    public void verifyEmail(String rawToken) {
-        String hash = TokenUtil.sha256Hex(rawToken);
+    public void verifyEmailCode(Long userId, String rawCode) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "USER_NOT_FOUND"));
 
-        EmailVerificationToken token = tokenRepository.findByTokenHash(hash)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_TOKEN"));
+        if (user.isEmailVerified()) {
+            return; // 이미 인증된 경우 idempotent
+        }
 
-        if (token.isUsed() || token.isExpired()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "TOKEN_EXPIRED_OR_USED");
+        EmailVerificationToken token = tokenRepository.findTopByUserAndUsedAtIsNullOrderByIdDesc(user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "NO_ACTIVE_CODE"));
+
+        if (token.isExpired() || token.isUsed()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CODE_EXPIRED_OR_USED");
+        }
+        if (token.isLocked()) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_ATTEMPTS");
+        }
+
+        if (!token.matchesCode(rawCode)) {
+            token.increaseAttempt();
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_CODE");
         }
 
         token.markUsed();
-
-        Users user = token.getUser();
         user.markEmailVerified();
-        user.changeStatus(UserStatus.ADMIN_PENDING); //가계정 -> 학교 인증 대기
+        user.changeStatus(UserStatus.ADMIN_PENDING);
     }
 }
