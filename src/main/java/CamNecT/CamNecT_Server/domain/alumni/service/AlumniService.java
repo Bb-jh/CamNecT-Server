@@ -1,17 +1,15 @@
 package CamNecT.CamNecT_Server.domain.alumni.service;
 
 import CamNecT.CamNecT_Server.domain.alumni.dto.AlumniPreviewResponse;
+import CamNecT.CamNecT_Server.domain.alumni.repository.AlumniRepository;
 import CamNecT.CamNecT_Server.domain.users.model.UserProfile;
-import CamNecT.CamNecT_Server.domain.users.model.UserTagMap;
-import CamNecT.CamNecT_Server.domain.users.repository.UserInterestRepository;
 import CamNecT.CamNecT_Server.domain.users.repository.UserProfileRepository;
-import CamNecT.CamNecT_Server.domain.users.repository.UserTagMapRepository;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import CamNecT.CamNecT_Server.global.tag.repository.TagRepository;
+import CamNecT.CamNecT_Server.global.tag.service.TagServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -20,59 +18,39 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AlumniService {
 
-    private final UserInterestRepository userInterestRepository;
-    private final UserTagMapRepository userTagMapRepository;
     private final TagRepository tagRepository;
     private final UserProfileRepository userProfileRepository;
+    private final TagServiceImpl tagService;
+    private final AlumniRepository alumniRepository;
 
-    public List<AlumniPreviewResponse> searchAlumni(Long myUserId, List<Long> tagList) {
+    public List<AlumniPreviewResponse> searchAlumni(Long userId, String name, List<Long> tagIdList) {
 
-        //유저 필터링
-        List<Long> myInterestIds = userInterestRepository.findInterestIdsByUserId(myUserId);
+        // 1. 조건에 맞는 유저 ID 목록 조회
+        int tagCount = (tagIdList == null) ? 0 : tagIdList.size();
+        List<Long> targetIds = alumniRepository.findAlumniIdsByConditions(userId, name, tagIdList, tagCount);
 
-        myInterestIds = (tagList == null || tagList.isEmpty()) ? null : tagList;
+        if (targetIds.isEmpty()) return List.of();
 
-        List<Long> AlumniIdList = userInterestRepository.findRecommendedUserIds(myUserId, myInterestIds, tagList);
-
-        //dto 감싸기
-
-
-        //유저 필터링
-        List<Long> recommendedIds = userInterestRepository.findRecommendedUserIds(myUserId, myInterestIds, tagList);
-        if (recommendedIds.isEmpty()) return Collections.emptyList();
-
-        //일괄 조회 (N+1 방지)
-
-        List<UserProfile> profiles = userProfileRepository.findAllByUserIdIn(recommendedIds);
-        List<UserTagMap> tagMaps = userTagMapRepository.findAllByUserIdIn(recommendedIds);
-
-        //전체 태그 정보 가져오기
-        List<Long> allTagIds = tagMaps.stream().map(UserTagMap::getTagId).distinct().toList();
-        List<Tag> allTags = tagRepository.findAllByIdIn(allTagIds);
-
-        //빠른 조회를 위한 Map 변환
-        Map<Long, UserProfile> profileMap = profiles.stream()
+        // 2. 프로필 정보 조회 및 Map 변환
+        Map<Long, UserProfile> profileMap = userProfileRepository.findAllById(targetIds).stream()
                 .collect(Collectors.toMap(UserProfile::getUserId, p -> p));
 
-        Map<Long, Tag> tagDataMap = allTags.stream()
-                .collect(Collectors.toMap(Tag::getId, t -> t));
-
-        // 유저별로 태그 리스트 그룹화: Map<UserId, List<Tag>>
-        Map<Long, List<Tag>> userTagsGroupMap = tagMaps.stream()
+        // 3. 태그 정보 조회 및 Map 변환 (통합 로직)
+        List<Object[]> tagResults = tagRepository.findTagsWithUserIdByUserIdIn(targetIds);
+        Map<Long, List<Tag>> tagMap = tagResults.stream()
                 .collect(Collectors.groupingBy(
-                        UserTagMap::getUserId,
-                        Collectors.mapping(map -> tagDataMap.get(map.getTagId()), Collectors.toList())
+                        row -> (Long) row[0], // userId
+                        Collectors.mapping(row -> (Tag) row[1], Collectors.toList()) // Tag 객체
                 ));
 
-        //원래 정렬된 ID 순서대로 DTO 조립
-        return recommendedIds.stream()
+        // 4. targetIds의 정렬 순서를 유지하며 최종 DTO 생성
+        return targetIds.stream()
                 .map(id -> new AlumniPreviewResponse(
                         id,
                         profileMap.get(id),
-                        userTagsGroupMap.getOrDefault(id, Collections.emptyList())
+                        tagMap.getOrDefault(id, List.of())
                 ))
                 .toList();
-
     }
 
 }
