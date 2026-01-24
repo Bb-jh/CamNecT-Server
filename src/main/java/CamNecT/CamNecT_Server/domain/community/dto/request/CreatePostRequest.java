@@ -1,6 +1,7 @@
 package CamNecT.CamNecT_Server.domain.community.dto.request;
 
 import CamNecT.CamNecT_Server.domain.community.model.enums.BoardCode;
+import CamNecT.CamNecT_Server.domain.community.model.enums.PostAccessType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -13,7 +14,9 @@ public record CreatePostRequest(
         @NotBlank String content,
         Boolean anonymous,
         List<Long> tagIds, // <- global tags.tag_id들
-        List<AttachmentRequest> attachments
+        List<AttachmentRequest> attachments,
+        PostAccessType accessType,
+        Integer requiredPoints
 ) {
     public boolean isAnonymous() { return Boolean.TRUE.equals(anonymous); }
 }
