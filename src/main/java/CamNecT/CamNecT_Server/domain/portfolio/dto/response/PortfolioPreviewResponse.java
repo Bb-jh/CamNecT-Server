@@ -1,11 +1,17 @@
 package CamNecT.CamNecT_Server.domain.portfolio.dto.response;
 
-import java.time.LocalDateTime;
+import CamNecT.CamNecT_Server.domain.portfolio.model.PortfolioProject;
 
 public record PortfolioPreviewResponse(
         Long portfolioId,
         String title,
-        String thumbnailUrl,
-        LocalDateTime updatedAt
+        String thumbnailUrl
 ) {
+    public static PortfolioPreviewResponse of(PortfolioProject project) {
+        return new PortfolioPreviewResponse(
+                project.getPortfolioId(),
+                project.getTitle(),
+                project.getThumbnailUrl()
+        );
+    }
 }

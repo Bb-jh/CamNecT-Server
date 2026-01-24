@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "PortfolioAsset")
 @Getter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PortfolioAsset {
 
@@ -27,9 +29,6 @@ public class PortfolioAsset {
 
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;
-
-    @Column(name = "is_thumbnail", nullable = false)
-    private boolean isThumbnail;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
