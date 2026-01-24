@@ -2,6 +2,8 @@ package CamNecT.CamNecT_Server.domain.auth.service;
 
 import CamNecT.CamNecT_Server.domain.auth.dto.signup.SignupRequest;
 import CamNecT.CamNecT_Server.domain.auth.dto.signup.SignupResponse;
+import CamNecT.CamNecT_Server.domain.verification.email.event.EmailVerificationCodeIssuedEvent;
+import CamNecT.CamNecT_Server.domain.verification.email.model.EmailTokenUtil;
 import CamNecT.CamNecT_Server.domain.verification.email.model.EmailVerificationToken;
 import CamNecT.CamNecT_Server.domain.verification.email.repository.EmailVerificationTokenRepository;
 import CamNecT.CamNecT_Server.global.jwt.TokenUtil;
@@ -11,14 +13,12 @@ import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.global.mail.EmailSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.util.UriComponentsBuilder;
-
-import java.time.LocalDateTime;
 import java.util.regex.Pattern;
 
 @Service
@@ -28,7 +28,8 @@ public class SignupService {
     private final UserRepository userRepository;
     private final EmailVerificationTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailSender emailSender;
+
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Value("${app.auth.email-verification.expiration-minutes:30}")
     private long expirationMinutes;
@@ -69,24 +70,16 @@ public class SignupService {
 
         userRepository.save(user);
 
-        // 4) 인증 토큰 저장(해시) + 메일 발송(raw)
-        String rawToken = TokenUtil.newToken();
-        String tokenHash = TokenUtil.sha256Hex(rawToken);
+        // 미사용 코드가 남아있으면 정리 (재발급/중복 발급 대비)
+        tokenRepository.deleteByUserAndUsedAtIsNull(user);
 
-        EmailVerificationToken token = new EmailVerificationToken(
-                user,
-                tokenHash,
-                LocalDateTime.now().plusMinutes(expirationMinutes)
-        );
+        String rawCode = EmailTokenUtil.new6DigitCode();
+        EmailVerificationToken token = EmailVerificationToken.issue(user, rawCode, expirationMinutes);
         tokenRepository.save(token);
 
-        String verifyUrl = UriComponentsBuilder
-                .fromHttpUrl(verifyBaseUrl)
-                .queryParam("token", rawToken)
-                .build()
-                .toUriString();
-
-        emailSender.sendEmailVerification(user.getEmail(), verifyUrl);
+        applicationEventPublisher.publishEvent(
+                new EmailVerificationCodeIssuedEvent(user.getEmail(), rawCode, expirationMinutes)
+        );
 
         return new SignupResponse(user.getUserId(), user.getStatus().name());
     }

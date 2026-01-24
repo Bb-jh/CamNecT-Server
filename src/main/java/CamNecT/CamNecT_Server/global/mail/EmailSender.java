@@ -1,5 +1,5 @@
 package CamNecT.CamNecT_Server.global.mail;
 
 public interface EmailSender {
-    void sendEmailVerification(String toEmail, String verifyUrl);
+    void sendEmailVerificationCode(String toEmail, String code, long expiresMinutes);
 }

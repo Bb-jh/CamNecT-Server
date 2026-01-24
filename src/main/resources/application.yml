@@ -2,9 +2,8 @@ app:
   auth:
     email-verification:
       expiration-minutes: 30
-      verify-base-url: ${VERIFY_BASE_URL:http://localhost:8080/api/verification/email/verify}
       mail:
-        subject: Camnect 이메일 인증 링크
+        subject: "CamNecT 이메일 인증번호"
   verification:
     document:
       storage: s3 #local | s3
