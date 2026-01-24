@@ -5,7 +5,6 @@ import CamNecT.CamNecT_Server.domain.users.model.Users;
 import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.domain.verification.email.model.EmailVerificationToken;
 import CamNecT.CamNecT_Server.domain.verification.email.repository.EmailVerificationTokenRepository;
-import CamNecT.CamNecT_Server.global.jwt.TokenUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
