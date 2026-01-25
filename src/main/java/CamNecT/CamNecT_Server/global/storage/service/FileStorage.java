@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.global.storage;
+package CamNecT.CamNecT_Server.global.storage.service;
 
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;

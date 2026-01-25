@@ -1,6 +1,6 @@
-package CamNecT.CamNecT_Server.global.storage;
+package CamNecT.CamNecT_Server.global.storage.service;
 
-import CamNecT.CamNecT_Server.global.common.config.S3Props;
+import CamNecT.CamNecT_Server.global.storage.config.S3Props;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.StorageErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,6 @@ import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 
 @Component
@@ -28,11 +27,11 @@ public class S3FileStorage implements FileStorage {
     private final S3Client s3;
     private final S3Props props;
 
-    private static final Map<String, String> EXT_BY_CONTENT_TYPE = Map.of(
-            "application/pdf", ".pdf",
-            "image/jpeg", ".jpg",
-            "image/png", ".png"
-    );
+//    private static final Map<String, String> EXT_BY_CONTENT_TYPE = Map.of(
+//            "application/pdf", ".pdf",
+//            "image/jpeg", ".jpg",
+//            "image/png", ".png"
+//    );
 
     @Override
     public String save(String prefix, MultipartFile file) {

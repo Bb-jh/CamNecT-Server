@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.global.common.config;
+package CamNecT.CamNecT_Server.global.storage.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -9,14 +9,13 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
-@EnableConfigurationProperties(S3Props.class)
-public class S3Config {
+@EnableConfigurationProperties({S3Props.class, LocalStorageProps.class, StorageProperties.class})
+public class StorageConfig {
 
     @Bean
     public S3Client s3Client(@Value("${app.s3.region}") String region) {
         return S3Client.builder()
                 .region(Region.of(region))
-                .credentialsProvider(DefaultCredentialsProvider.create())
                 .build();
     }
 }

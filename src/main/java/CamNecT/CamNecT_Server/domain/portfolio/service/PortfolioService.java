@@ -9,7 +9,7 @@ import CamNecT.CamNecT_Server.domain.portfolio.repository.PortfolioAssetReposito
 import CamNecT.CamNecT_Server.domain.portfolio.repository.PortfolioRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.UserErrorCode;
-import CamNecT.CamNecT_Server.global.common.service.S3Service;
+import CamNecT.CamNecT_Server.global.storage.service.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

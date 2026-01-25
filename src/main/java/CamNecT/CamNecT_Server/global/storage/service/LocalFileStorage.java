@@ -1,6 +1,6 @@
-package CamNecT.CamNecT_Server.global.storage;
+package CamNecT.CamNecT_Server.global.storage.service;
 
-import CamNecT.CamNecT_Server.global.common.config.LocalStorageProps;
+import CamNecT.CamNecT_Server.global.storage.config.LocalStorageProps;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.StorageErrorCode;
 import lombok.RequiredArgsConstructor;
