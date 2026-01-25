@@ -1,6 +1,8 @@
 package CamNecT.CamNecT_Server.global.storage;
 
 import CamNecT.CamNecT_Server.global.common.config.S3Props;
+import CamNecT.CamNecT_Server.global.common.exception.CustomException;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.StorageErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.InputStreamResource;
@@ -11,9 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -22,7 +22,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name="app.verification.document.storage", havingValue="s3")
+@ConditionalOnProperty(name = "app.storage.type", havingValue = "s3", matchIfMissing = true)
 public class S3FileStorage implements FileStorage {
 
     private final S3Client s3;
@@ -36,45 +36,91 @@ public class S3FileStorage implements FileStorage {
 
     @Override
     public String save(String prefix, MultipartFile file) {
-        if (!StringUtils.hasText(prefix)) {
-            throw new IllegalArgumentException("저장 prefix가 비어있습니다.");
-        }
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("빈 파일은 저장할 수 없습니다.");
-        }
+        validatePrefix(prefix);
+        validateFile(file);
 
-        String contentType = file.getContentType();
-        String ext = EXT_BY_CONTENT_TYPE.get(contentType);
-        if (ext == null) throw new IllegalArgumentException("허용되지 않은 Content-Type: " + contentType);
-
-        // prefix는 "사용자 입력"이 아니라 서버가 만든 값만 넣으세요 (예: userId)
         String safePrefix = sanitizePrefix(prefix);
-        String key = buildKey(safePrefix, UUID.randomUUID().toString() + ext);
+        String ext = resolveExtension(file);
+        String key = buildKey(safePrefix, UUID.randomUUID() + ext);
 
         PutObjectRequest req = PutObjectRequest.builder()
                 .bucket(props.bucket())
                 .key(key)
-                .contentType(contentType)
+                .contentType(file.getContentType())
                 .build();
 
         try (var in = file.getInputStream()) {
             s3.putObject(req, RequestBody.fromInputStream(in, file.getSize()));
-        } catch (IOException e) {
-            throw new IllegalStateException("S3 업로드 실패: " + e.getMessage(), e);
+            return key; // DB에는 key 저장
+        } catch (IOException | S3Exception e) {
+            throw new CustomException(StorageErrorCode.STORAGE_UPLOAD_FAILED, e);
         }
-
-        return key; // ✅ DB에는 로컬 경로가 아니라 S3 key 저장
     }
 
     @Override
     public Resource loadAsResource(String storageKey) {
+        validateKey(storageKey);
+
         GetObjectRequest req = GetObjectRequest.builder()
                 .bucket(props.bucket())
                 .key(storageKey)
                 .build();
 
-        ResponseInputStream<GetObjectResponse> in = s3.getObject(req);
-        return new InputStreamResource(in);
+        try {
+            ResponseInputStream<GetObjectResponse> in = s3.getObject(req);
+            return new InputStreamResource(in);
+        } catch (NoSuchKeyException e) {
+            throw new CustomException(StorageErrorCode.STORAGE_NOT_FOUND, e);
+        } catch (S3Exception e) {
+            if ("NoSuchKey".equalsIgnoreCase(e.awsErrorDetails() != null ? e.awsErrorDetails().errorCode() : null)
+                    || e.statusCode() == 404) {
+                throw new CustomException(StorageErrorCode.STORAGE_NOT_FOUND, e);
+            }
+            throw new CustomException(StorageErrorCode.STORAGE_DOWNLOAD_FAILED, e);
+        }
+    }
+
+    @Override
+    public void delete(String storageKey) {
+        validateKey(storageKey);
+
+        DeleteObjectRequest req = DeleteObjectRequest.builder()
+                .bucket(props.bucket())
+                .key(storageKey)
+                .build();
+
+        try {
+            s3.deleteObject(req);
+        } catch (S3Exception e) {
+            throw new CustomException(StorageErrorCode.STORAGE_DELETE_FAILED, e);
+        }
+    }
+
+    ///////////////// 내부 함수들 /////////////////
+    private void validatePrefix(String prefix) {
+        if (!StringUtils.hasText(prefix)) {
+            throw new CustomException(StorageErrorCode.STORAGE_PREFIX_REQUIRED);
+        }
+    }
+
+    private void validateFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new CustomException(StorageErrorCode.STORAGE_EMPTY_FILE);
+        }
+    }
+    private void validateKey(String storageKey) {
+        if (!StringUtils.hasText(storageKey)) {
+            throw new CustomException(StorageErrorCode.STORAGE_KEY_REQUIRED);
+        }
+    }
+
+    private String resolveExtension(MultipartFile file) {
+        String original = file.getOriginalFilename();
+        if (!StringUtils.hasText(original)) return "";
+        String ext = StringUtils.getFilenameExtension(original);
+        if (!StringUtils.hasText(ext)) return "";
+        String safe = ext.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        return safe.isEmpty() ? "" : "." + safe;
     }
 
     private String buildKey(String subPrefix, String filename) {
@@ -86,7 +132,9 @@ public class S3FileStorage implements FileStorage {
     private String sanitizePrefix(String prefix) {
         String p = prefix.replace("\\", "/").toLowerCase(Locale.ROOT);
         p = trimSlashes(p);
-        if (p.contains("..")) throw new IllegalArgumentException("허용되지 않은 prefix 입니다.");
+        if (p.contains("..")) {
+            throw new CustomException(StorageErrorCode.STORAGE_INVALID_PREFIX);
+        }
         return p;
     }
 
