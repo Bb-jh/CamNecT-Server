@@ -16,6 +16,8 @@ import CamNecT.CamNecT_Server.domain.users.model.*;
 import CamNecT.CamNecT_Server.domain.users.repository.*;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.AuthErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.UserErrorCode;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import CamNecT.CamNecT_Server.global.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
@@ -85,12 +87,12 @@ public class ProfileService {
     public ProfileStatusResponse updateBasicsSettings(Long userId, UpdateProfileBasicsRequest req) {
 
         Users user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
         requireOnboardingPending(user);
 
         UserProfile userProfile = userProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new CustomException(UserErrorCode.USER_PROFILE_NOT_FOUND));
 
         userProfile.updateOnboardingProfile(req.bio(), req.profileImageUrl());
 
@@ -104,7 +106,7 @@ public class ProfileService {
     public ProfileStatusResponse updateProfileTags(Long userId, UpdateProfileTagsRequest req) {
 
         Users user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+                .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
         requireOnboardingPending(user);
 
@@ -114,7 +116,7 @@ public class ProfileService {
         if (!tagIds.isEmpty()) {
             var tags = tagRepository.findAllById(tagIds);
             if (tags.size() != tagIds.size()) {
-                throw new IllegalArgumentException("존재하지 않는 태그가 포함되어 있습니다.");
+                throw new CustomException(UserErrorCode.INVALID_TAG_IDS);
             }
         }
 
@@ -130,10 +132,10 @@ public class ProfileService {
 
     private void requireOnboardingPending(Users user) {
         if (user.getStatus() == UserStatus.SUSPENDED) {
-            throw new IllegalStateException("정지된 계정입니다.");
+            throw new CustomException(UserErrorCode.USER_SUSPENDED);
         }
         if (user.getStatus() == UserStatus.EMAIL_PENDING) {
-            throw new IllegalStateException("이메일 인증이 필요합니다.");
+            throw new CustomException(AuthErrorCode.EMAIL_NOT_VERIFIED);
         }
     }
 
