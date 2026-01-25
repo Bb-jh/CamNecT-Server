@@ -31,11 +31,11 @@ public class PostAttachments {
     @JoinColumn(name = "post_id", nullable = false)
     private Posts post;
 
-    @Column(name = "file_url", nullable = false, length = 500)
-    private String fileUrl;
+    @Column(name = "file_key", nullable = false, length = 500)
+    private String fileKey;
 
-    @Column(name = "thumbnail_url", length = 500)
-    private String thumbnailUrl;
+    @Column(name = "thumbnail_key", length = 500)
+    private String thumbnailKey;
 
     @Column(name = "width")
     private Integer width;
@@ -59,8 +59,8 @@ public class PostAttachments {
 
     public static PostAttachments create(
             Posts post,
-            String fileUrl,
-            String thumbnailUrl,
+            String fileKey,
+            String thumbnailKey,
             Integer width,
             Integer height,
             Long fileSize,
@@ -68,8 +68,8 @@ public class PostAttachments {
     ) {
         return PostAttachments.builder()
                 .post(post)
-                .fileUrl(fileUrl)
-                .thumbnailUrl(thumbnailUrl)
+                .fileKey(fileKey)
+                .thumbnailKey(thumbnailKey)
                 .width(width)
                 .height(height)
                 .fileSize(fileSize)
@@ -87,6 +87,6 @@ public class PostAttachments {
     }
 
     public String thumbnailOrFile() {
-        return (thumbnailUrl != null && !thumbnailUrl.isBlank()) ? thumbnailUrl : fileUrl;
+        return (thumbnailKey != null && !thumbnailKey.isBlank()) ? thumbnailKey : fileKey;
     }
 }
