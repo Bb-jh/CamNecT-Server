@@ -1,6 +1,5 @@
 package CamNecT.CamNecT_Server.domain.verification.document.service;
 
-import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationFileRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationSubmissionRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.config.DocumentVerificationProperties;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.DocumentVerificationDetailResponse;
@@ -11,6 +10,8 @@ import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentType;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationFile;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationSubmission;
 import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationStatus;
+import CamNecT.CamNecT_Server.global.common.exception.CustomException;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.VerificationErrorCode;
 import CamNecT.CamNecT_Server.global.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,21 +29,21 @@ public class DocumentVerificationService {
     private final DocumentVerificationProperties props;
     private final FileStorage fileStorage;
     private final DocumentVerificationSubmissionRepository submissionRepo;
-    private final DocumentVerificationFileRepository fileRepo;
 
     @Transactional
     public SubmitDocumentVerificationResponse submit(Long userId, DocumentType docType, List<MultipartFile> documents) {
         if (documents == null || documents.isEmpty()) {
-            throw new IllegalArgumentException("documents는 최소 1개 필요합니다.");
+            throw new CustomException(VerificationErrorCode.DOCUMENTS_REQUIRED);
+
         }
         if (documents.size() > props.getMaxFiles()) {
-            throw new IllegalArgumentException("파일은 최대 " + props.getMaxFiles() + "개까지 업로드 가능합니다.");
+            throw new CustomException(VerificationErrorCode.TOO_MANY_FILES);
         }
 
         // 유저당 PENDING 1개 제한(추천 정책)
         if (submissionRepo.existsByUserIdAndStatus(userId, VerificationStatus.PENDING)) {
             // throw new CustomException(ErrorCode.VERIFICATION_PENDING_EXISTS);
-            throw new IllegalStateException("이미 처리 대기(PENDING) 중인 요청이 있습니다.");
+            throw new CustomException(VerificationErrorCode.PENDING_ALREADY_EXISTS);
         }
 
         DocumentVerificationSubmission sub = DocumentVerificationSubmission.builder()
@@ -59,13 +60,13 @@ public class DocumentVerificationService {
         for (MultipartFile file : documents) {
             validateFile(file);
 
-            String storageKey = fileStorage.save(prefix, file); // ✅ 여기만 이렇게 바꾸면 됨
+            String storageKey = fileStorage.save(prefix, file); // 여기만 이렇게 바꾸면 됨
 
             DocumentVerificationFile vf = DocumentVerificationFile.builder()
                     .originalFilename(safeName(file.getOriginalFilename()))
                     .contentType(file.getContentType())
                     .size(file.getSize())
-                    .storageKey(storageKey) // ✅ "verifications/user-.../submission-.../uuid.pdf"
+                    .storageKey(storageKey) // "verifications/user-.../submission-.../uuid.pdf"
                     .uploadedAt(LocalDateTime.now())
                     .build();
 
@@ -88,7 +89,7 @@ public class DocumentVerificationService {
     @Transactional(readOnly = true)
     public DocumentVerificationDetailResponse mySubmissionDetail(Long userId, Long submissionId) {
         DocumentVerificationSubmission r = submissionRepo.findByIdAndUserId(submissionId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
 
         var files = r.getFiles().stream()
                 .map(f -> new DocumentVerificationFileDto(f.getId(), f.getOriginalFilename(), f.getContentType(), f.getSize()))
@@ -102,10 +103,10 @@ public class DocumentVerificationService {
     @Transactional
     public void cancel(Long userId, Long submissionId) {
         DocumentVerificationSubmission r = submissionRepo.findByIdAndUserId(submissionId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
 
         if (r.getStatus() != VerificationStatus.PENDING) {
-            throw new IllegalStateException("PENDING 상태만 취소할 수 있습니다.");
+            throw new CustomException(VerificationErrorCode.ONLY_PENDING_CAN_REVIEW);
         }
 
         r.cancel();
@@ -113,16 +114,14 @@ public class DocumentVerificationService {
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("빈 파일은 업로드할 수 없습니다.");
+            throw new CustomException(VerificationErrorCode.EMPTY_FILE_NOT_ALLOWED);
         }
         if (file.getSize() > props.maxFileSizeBytes()) {
-            // throw new CustomException(ErrorCode.VERIFICATION_FILE_TOO_LARGE);
-            throw new IllegalArgumentException("파일 크기가 제한을 초과했습니다.");
+            throw new CustomException(VerificationErrorCode.FILE_TOO_LARGE);
         }
         String ct = file.getContentType();
         if (!StringUtils.hasText(ct) || !props.getAllowedContentTypes().contains(ct)) {
-            // throw new CustomException(ErrorCode.VERIFICATION_UNSUPPORTED_CONTENT_TYPE);
-            throw new IllegalArgumentException("허용되지 않는 Content-Type: " + ct);
+            throw new CustomException(VerificationErrorCode.UNSUPPORTED_CONTENT_TYPE);
         }
     }
 

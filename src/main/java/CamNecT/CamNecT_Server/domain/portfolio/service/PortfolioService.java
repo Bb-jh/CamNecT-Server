@@ -8,7 +8,7 @@ import CamNecT.CamNecT_Server.domain.portfolio.model.PortfolioProject;
 import CamNecT.CamNecT_Server.domain.portfolio.repository.PortfolioAssetRepository;
 import CamNecT.CamNecT_Server.domain.portfolio.repository.PortfolioRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.UserErrorCode;
 import CamNecT.CamNecT_Server.global.common.service.S3Service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +36,7 @@ public class PortfolioService {
     public PortfolioDetailResponse portfolioDetail(Long userId, Long portfolioId) {
 
         PortfolioProject portfolio = portfolioRepository.findById(portfolioId).orElseThrow(
-                ()-> new CustomException(ErrorCode.NOT_FOUND)
-        );
+                ()-> new CustomException(UserErrorCode.PORTFOLIO_NOT_FOUND));
 
         List<PortfolioAsset> portfolioAssets = portfolioAssetRepository.findAssetsByPortfolioId(portfolioId);
 
@@ -96,11 +95,11 @@ public class PortfolioService {
     @Transactional
     public PortfolioPreviewResponse update(Long userId, Long portfolioId, PortfolioRequest request) {
         PortfolioProject project = portfolioRepository.findById(portfolioId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 포트폴리오가 없습니다."));
+                .orElseThrow(() -> new CustomException(UserErrorCode.PORTFOLIO_NOT_FOUND));
 
         // 권한 체크
         if (!project.getUserId().equals(userId)) {
-            throw new RuntimeException("수정 권한이 없습니다.");
+            throw new CustomException(UserErrorCode.PORTFOLIO_FORBIDDEN);
         }
 
         //썸네일 수정 (새 파일이 들어온 경우)
@@ -138,10 +137,10 @@ public class PortfolioService {
 
     public void delete(Long userId, Long portfolioId) {
         PortfolioProject project = portfolioRepository.findById(portfolioId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 포트폴리오가 없습니다."));
+                .orElseThrow(() -> new CustomException(UserErrorCode.PORTFOLIO_NOT_FOUND));
 
         if (!project.getUserId().equals(userId)) {
-            throw new RuntimeException("삭제 권한이 없습니다.");
+            throw new CustomException(UserErrorCode.PORTFOLIO_FORBIDDEN);
         }
 
         //S3에서 썸네일 삭제

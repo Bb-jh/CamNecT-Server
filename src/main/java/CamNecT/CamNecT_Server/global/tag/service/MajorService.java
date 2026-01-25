@@ -5,7 +5,7 @@ import CamNecT.CamNecT_Server.global.tag.dto.response.MajorResponse;
 import CamNecT.CamNecT_Server.global.tag.repository.InstitutionRepository;
 import CamNecT.CamNecT_Server.global.tag.repository.MajorRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
 import CamNecT.CamNecT_Server.global.tag.model.Majors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
