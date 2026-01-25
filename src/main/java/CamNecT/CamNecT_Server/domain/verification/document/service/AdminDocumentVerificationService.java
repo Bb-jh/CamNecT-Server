@@ -51,7 +51,7 @@ public class AdminDocumentVerificationService {
         }
 
         Users user = usersRepository.findById(s.getUserId())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.USER_NOT_FOUND));
 
         if (req.decision() == ReviewDocumentVerificationRequest.Decision.APPROVE) {
             s.approve(adminId);

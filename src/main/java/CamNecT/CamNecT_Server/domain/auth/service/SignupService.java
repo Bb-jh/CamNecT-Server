@@ -10,7 +10,7 @@ import CamNecT.CamNecT_Server.domain.users.model.UserStatus;
 import CamNecT.CamNecT_Server.domain.users.model.Users;
 import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.AuthErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,14 +36,14 @@ public class SignupService {
     @Transactional
     public SignupResponse signup(SignupRequest req) {
         if (!req.agreements().serviceTerms() || !req.agreements().privacyTerms()) {
-            throw new CustomException(ErrorCode.TERMS_REQUIRED);
+            throw new CustomException(AuthErrorCode.TERMS_REQUIRED);
         }
 
         if (userRepository.existsByEmail(req.email())) {
-            throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            throw new CustomException(AuthErrorCode.EMAIL_ALREADY_EXISTS);
         }
         if (userRepository.existsByUsername(req.username())) {
-            throw new CustomException(ErrorCode.USERNAME_ALREADY_EXISTS);
+            throw new CustomException(AuthErrorCode.USERNAME_ALREADY_EXISTS);
         }
 
         // 3)비밀번호 체크
@@ -89,7 +89,7 @@ public class SignupService {
 
     private void validatePassword(String pw) {
         if (pw == null || !PASSWORD_PATTERN.matcher(pw).matches()) {
-            throw new CustomException(ErrorCode.INVALID_PASSWORD);
+            throw new CustomException(AuthErrorCode.INVALID_PASSWORD);
         }
     }
 }
