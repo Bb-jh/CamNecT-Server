@@ -15,6 +15,7 @@ import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostStatsReposit
 import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostsRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.CommunityErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -37,25 +38,25 @@ public class CommentServiceImpl implements CommentService {
         if (userId == null) userId = 1L;
 
         Posts post = postsRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.POST_NOT_FOUND));
 
         Comments parent = null;
         if (req.parentCommentId() != null) {
             parent = commentsRepository.findById(req.parentCommentId())
-                    .orElseThrow(() -> new CustomException(ErrorCode.PARENT_COMMENT_NOT_FOUND));
+                    .orElseThrow(() -> new CustomException(CommunityErrorCode.PARENT_COMMENT_NOT_FOUND));
 
             if (!Objects.equals(parent.getPost().getId(), postId)) {
-                throw new CustomException(ErrorCode.PARENT_COMMENT_NOT_IN_POST);
+                throw new CustomException(CommunityErrorCode.PARENT_COMMENT_NOT_IN_POST);
             }
 
             // 부모가 삭제/숨김이면 자식 댓글 추가 불가
             if (parent.getStatus() == CommentStatus.DELETED || parent.getStatus() == CommentStatus.HIDDEN) {
-                throw new CustomException(ErrorCode.CANNOT_REPLY_TO_DELETED_OR_HIDDEN);
+                throw new CustomException(CommunityErrorCode.CANNOT_REPLY_TO_DELETED_OR_HIDDEN);
             }
 
             // 2뎁스 제한: 부모가 이미 대댓글이면 금지
             if (parent.getParent() != null) {
-                throw new CustomException(ErrorCode.COMMENT_MAX_DEPTH_EXCEEDED);
+                throw new CustomException(CommunityErrorCode.COMMENT_MAX_DEPTH_EXCEEDED);
             }
         }
 
@@ -79,10 +80,10 @@ public class CommentServiceImpl implements CommentService {
         if (userId == null) userId = 1L;
 
         Comments comment = commentsRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.COMMENT_NOT_FOUND));
 
         if (!Objects.equals(comment.getUserId(), userId)) {
-            throw new CustomException(ErrorCode.COMMENT_FORBIDDEN);
+            throw new CustomException(CommunityErrorCode.COMMENT_FORBIDDEN);
         }
 
         comment.update(req.content());
@@ -95,10 +96,10 @@ public class CommentServiceImpl implements CommentService {
         if (userId == null) userId = 1L;
 
         Comments comment = commentsRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.COMMENT_NOT_FOUND));
 
         if (!Objects.equals(comment.getUserId(), userId)) {
-            throw new CustomException(ErrorCode.COMMENT_FORBIDDEN);
+            throw new CustomException(CommunityErrorCode.COMMENT_FORBIDDEN);
         }
 
         // 중복 삭제 방지 (카운트 두 번 깎이는 거 방지)
@@ -122,7 +123,7 @@ public class CommentServiceImpl implements CommentService {
         if (userId == null) userId = 1L;
 
         Comments comment = commentsRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.COMMENT_NOT_FOUND));
 
         boolean liked;
         if (commentLikesRepository.existsByComment_IdAndUserId(commentId, userId)) {
@@ -145,7 +146,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public List<CommentRow> list(Long postId, int size) {
         if (!postsRepository.existsById(postId)) {
-            throw new CustomException(ErrorCode.POST_NOT_FOUND);
+            throw new CustomException(CommunityErrorCode.POST_NOT_FOUND);
         }
 
         int limit = Math.min(Math.max(size, 1), 50);

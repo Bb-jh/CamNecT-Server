@@ -17,6 +17,8 @@ import CamNecT.CamNecT_Server.domain.point.model.PointEvent;
 import CamNecT.CamNecT_Server.domain.point.service.PointService;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.AuthErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.CommunityErrorCode;
 import CamNecT.CamNecT_Server.global.tag.model.Tag;
 import CamNecT.CamNecT_Server.global.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
@@ -59,14 +61,14 @@ public class PostServiceImpl implements PostService {
         if (userId == null) userId = 1L;
 
         Boards board = boardsRepository.findByCode(req.boardCode())
-                .orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.BOARD_NOT_FOUND));
 
         PostAccessType accessType = (req.accessType() == null) ? PostAccessType.FREE : req.accessType();
         Integer requiredPoints = req.requiredPoints();
 
         if (accessType == PostAccessType.POINT_REQUIRED) {
             if (requiredPoints == null || requiredPoints <= 0) {
-                throw new CustomException(ErrorCode.INVALID_REQUIRED_POINTS);
+                throw new CustomException(CommunityErrorCode.INVALID_REQUIRED_POINTS);
             }
         } else {
             requiredPoints = null; // FREE면 비용 제거
@@ -97,10 +99,10 @@ public class PostServiceImpl implements PostService {
         if (userId == null) userId = 1L;
 
         Posts post = postsRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.POST_NOT_FOUND));
 
         if (!Objects.equals(post.getUserId(), userId)) {
-            throw new CustomException(ErrorCode.POST_FORBIDDEN);
+            throw new CustomException(CommunityErrorCode.POST_FORBIDDEN);
         }
 
         post.update(req.title(), req.content(), req.anonymous());
@@ -125,15 +127,15 @@ public class PostServiceImpl implements PostService {
         if (userId == null) userId = 1L;
 
         Posts post = postsRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.POST_NOT_FOUND));
 
         if (!Objects.equals(post.getUserId(), userId)) {
-            throw new CustomException(ErrorCode.POST_FORBIDDEN);
+            throw new CustomException(CommunityErrorCode.POST_FORBIDDEN);
         }
 
         if (post.getBoard().getCode() == BoardCode.QUESTION
                 && acceptedCommentsRepository.existsByPost_Id(postId)) {
-            throw new CustomException(ErrorCode.CANNOT_DELETE_ACCEPTED_QUESTION);
+            throw new CustomException(CommunityErrorCode.CANNOT_DELETE_ACCEPTED_QUESTION);
         }
 
         post.deleteSoft();
@@ -151,7 +153,7 @@ public class PostServiceImpl implements PostService {
         if (userId == null) userId = 1L;
 
         Posts post = postsRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.POST_NOT_FOUND));
 
         PostStats stats = getOrCreateStats(post);
 
@@ -172,10 +174,10 @@ public class PostServiceImpl implements PostService {
     public PostDetailResponse getDetail(Long userId, Long postId) {
 
         Posts post = postsRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.POST_NOT_FOUND));
 
         if (post.getStatus() != PostStatus.PUBLISHED) {
-            throw new CustomException(ErrorCode.POST_NOT_PUBLISHED);
+            throw new CustomException(CommunityErrorCode.POST_NOT_PUBLISHED);
         }
 
         PostStats stats = getOrCreateStats(post);
@@ -244,32 +246,32 @@ public class PostServiceImpl implements PostService {
 
 
         Posts post = postsRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.POST_NOT_FOUND));
         if (post.getBoard().getCode() != BoardCode.QUESTION) {
-            throw new CustomException(ErrorCode.ONLY_QUESTION_CAN_ACCEPT);
+            throw new CustomException(CommunityErrorCode.ONLY_QUESTION_CAN_ACCEPT);
         }
         // 질문 작성자만 채택 가능
         if (!Objects.equals(post.getUserId(), userId)) {
-            throw new CustomException(ErrorCode.POST_FORBIDDEN);
+            throw new CustomException(CommunityErrorCode.POST_FORBIDDEN);
         }
 
         Comments comment = commentsRepository.findById(commentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.COMMENT_NOT_FOUND));
 
         if (!Objects.equals(comment.getPost().getId(), postId)) {
-            throw new CustomException(ErrorCode.COMMENT_NOT_IN_POST);
+            throw new CustomException(CommunityErrorCode.COMMENT_NOT_IN_POST);
         }
 
         // (선택) 삭제/숨김 댓글 채택 금지
         if (comment.getStatus() != CommentStatus.PUBLISHED) {
-            throw new CustomException(ErrorCode.CANNOT_ACCEPT_UNPUBLISHED_COMMENT);
+            throw new CustomException(CommunityErrorCode.CANNOT_ACCEPT_UNPUBLISHED_COMMENT);
         }
 
         try {
             acceptedCommentsRepository.save(AcceptedComments.of(post, comment, userId));
         } catch (DataIntegrityViolationException e) {
             // 유니크(post_id) 위반이면 여기로 들어옴
-            throw new CustomException(ErrorCode.ALREADY_ACCEPTED, e);
+            throw new CustomException(CommunityErrorCode.ALREADY_ACCEPTED, e);
         }
         touchStats(postId);
 
@@ -290,11 +292,11 @@ public class PostServiceImpl implements PostService {
 
         List<Tag> tags = tagRepository.findAllById(ids);
         if (tags.size() != ids.size()) {
-            throw new CustomException(ErrorCode.INVALID_TAG_IDS);
+            throw new CustomException(CommunityErrorCode.INVALID_TAG_IDS);
         }
 
         for (Tag t : tags) {
-            if (!t.isActive()) throw new CustomException(ErrorCode.INACTIVE_TAG);
+            if (!t.isActive()) throw new CustomException(CommunityErrorCode.INACTIVE_TAG);
             postTagsRepository.save(PostTags.link(post, t));
         }
     }
@@ -302,7 +304,7 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public ToggleBookmarkResponse toggleBookmark(Long userId, Long postId) {
         Posts post = postsRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.POST_NOT_FOUND));
 
         PostStats stats = postStatsRepository.findByPost_Id(postId)
                 .orElseGet(() -> postStatsRepository.save(PostStats.init(post)));
@@ -335,14 +337,14 @@ public class PostServiceImpl implements PostService {
     public PurchasePostAccessResponse purchasePostAccess(Long userId, Long postId) {
 
         if (userId == null) {
-            throw new CustomException(ErrorCode.LOGIN_REQUIRED);
+            throw new CustomException(AuthErrorCode.LOGIN_REQUIRED);
         }
 
         Posts post = postsRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.POST_NOT_FOUND));
 
         if (post.getStatus() != PostStatus.PUBLISHED) {
-            throw new CustomException(ErrorCode.POST_NOT_PUBLISHED);
+            throw new CustomException(CommunityErrorCode.POST_NOT_PUBLISHED);
         }
 
         // 정보글이 아니면 구매 불필요
