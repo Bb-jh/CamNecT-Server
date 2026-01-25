@@ -1,5 +1,6 @@
-package CamNecT.CamNecT_Server.global.common.response.errorcode;
+package CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains;
 
+import CamNecT.CamNecT_Server.global.common.response.errorcode.BaseErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

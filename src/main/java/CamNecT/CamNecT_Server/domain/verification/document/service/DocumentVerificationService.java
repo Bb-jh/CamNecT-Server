@@ -12,7 +12,7 @@ import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerific
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationSubmission;
 import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationStatus;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.errorcode.VerificationErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.VerificationErrorCode;
 import CamNecT.CamNecT_Server.global.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
