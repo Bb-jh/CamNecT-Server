@@ -10,6 +10,9 @@ import CamNecT.CamNecT_Server.domain.verification.document.dto.ReviewDocumentVer
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationFile;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationSubmission;
 import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationStatus;
+import CamNecT.CamNecT_Server.global.common.exception.CustomException;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.VerificationErrorCode;
 import CamNecT.CamNecT_Server.global.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -35,20 +38,20 @@ public class AdminDocumentVerificationService {
     @Transactional(readOnly = true)
     public DocumentVerificationSubmission get(Long submissionId) {
         return submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
     }
 
     @Transactional
     public void review(Long adminId, Long submissionId, ReviewDocumentVerificationRequest req) {
         DocumentVerificationSubmission s = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
 
         if (s.getStatus() != VerificationStatus.PENDING) {
-            throw new IllegalStateException("PENDING 상태만 처리할 수 있습니다.");
+            throw new CustomException(VerificationErrorCode.ONLY_PENDING_CAN_REVIEW);
         }
 
         Users user = usersRepository.findById(s.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if (req.decision() == ReviewDocumentVerificationRequest.Decision.APPROVE) {
             s.approve(adminId);
@@ -60,7 +63,7 @@ public class AdminDocumentVerificationService {
         // REJECT
         String reason = (req.reason() == null) ? "" : req.reason().trim();
         if (reason.isBlank()) {
-            throw new IllegalArgumentException("반려 사유가 필요합니다.");
+            throw new CustomException(VerificationErrorCode.REJECT_REASON_REQUIRED);
         }
         s.reject(adminId, reason);
     }
@@ -68,7 +71,7 @@ public class AdminDocumentVerificationService {
     @Transactional(readOnly = true)
     public DownloadResult downloadFileWithMeta(Long submissionId, Long fileId) {
         DocumentVerificationFile f = fileRepo.findByIdAndSubmission_Id(fileId, submissionId)
-                .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.FILE_NOT_FOUND));
 
         Resource resource = fileStorage.loadAsResource(f.getStorageKey());
 
