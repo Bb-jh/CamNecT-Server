@@ -30,7 +30,6 @@ public class DocumentVerificationService {
     private final DocumentVerificationProperties props;
     private final FileStorage fileStorage;
     private final DocumentVerificationSubmissionRepository submissionRepo;
-    private final DocumentVerificationFileRepository fileRepo;
 
     @Transactional
     public SubmitDocumentVerificationResponse submit(Long userId, DocumentType docType, List<MultipartFile> documents) {

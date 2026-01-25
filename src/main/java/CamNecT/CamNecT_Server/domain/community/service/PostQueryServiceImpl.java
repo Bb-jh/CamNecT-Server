@@ -131,6 +131,8 @@ public class PostQueryServiceImpl implements PostQueryService {
     }
 
     private PostListResponse mapToListResponse(Slice<Posts> slice, Sort sort) {
+        int MAX_CONTENT = 80;
+
         List<Posts> posts = slice.getContent();
         if (posts.isEmpty()) return PostListResponse.of(List.of(), slice.hasNext(), null);
 
@@ -161,7 +163,7 @@ public class PostQueryServiceImpl implements PostQueryService {
             long answerCount = ps == null ? 0 : ps.getRootCommentCount();     // 질문 탭 "답변"
             long bookmarkCount = ps == null ? 0 : ps.getBookmarkCount();
 
-            String preview = makePreview(p.getContent(), 80);
+            String preview = makePreview(p.getContent(), MAX_CONTENT);
 
             items.add(new PostSummaryResponse(
                     p.getId(),
@@ -179,7 +181,7 @@ public class PostQueryServiceImpl implements PostQueryService {
             ));
         }
 
-        Posts last = posts.get(posts.size() - 1);
+        Posts last = posts.getLast();
         PostStats lastStats = statsMap.get(last.getId());
 
         Long nextCursorValue = switch (sort) {
