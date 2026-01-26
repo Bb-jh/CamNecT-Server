@@ -1,10 +1,16 @@
 package CamNecT.CamNecT_Server.domain.community.service;
 
 import CamNecT.CamNecT_Server.domain.community.dto.request.AttachmentRequest;
+import CamNecT.CamNecT_Server.domain.community.model.Posts.CommunityAttachmentProps;
 import CamNecT.CamNecT_Server.domain.community.model.Posts.PostAttachments;
 import CamNecT.CamNecT_Server.domain.community.model.Posts.Posts;
 import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostAttachmentsRepository;
+import CamNecT.CamNecT_Server.global.common.exception.CustomException;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.StorageErrorCode;
+import CamNecT.CamNecT_Server.global.storage.model.UploadPurpose;
+import CamNecT.CamNecT_Server.global.storage.model.UploadRefType;
 import CamNecT.CamNecT_Server.global.storage.service.FileStorage;
+import CamNecT.CamNecT_Server.global.storage.service.PresignEngine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,25 +30,28 @@ public class PostAttachmentsService {
     private final PostAttachmentsRepository postAttachmentsRepository;
     private final FileStorage fileStorage;
 
-    /**
-     * 첨부 "교체" 전략:
-     * 1) 기존 active 첨부 조회
-     * 2) 기존 active 첨부 soft delete
-     * 3) 새 첨부를 sortOrder(0..n-1)로 저장
-     * 4) (커밋 후) 새 목록에 없는 기존 파일들은 storage에서 delete
-     */
+    private final PresignEngine presignEngine;
+    private final CommunityAttachmentProps props;
+
     @Transactional
-    public void replace(Posts post, List<AttachmentRequest> attachments) {
-        // 1) 기존 active 조회 (삭제 후보 계산용)
+    public void replace(Posts post, Long userId, List<AttachmentRequest> attachments) {
+
+        if (attachments != null && attachments.size() > props.maxFiles()) {
+            throw new CustomException(StorageErrorCode.UPLOAD_TICKET_LIMIT_EXCEEDED);
+        }
+
         List<PostAttachments> oldActive =
                 postAttachmentsRepository.findByPost_IdAndStatusTrueOrderBySortOrderAscIdAsc(post.getId());
 
-        // 2) 기존 soft delete
+        Set<String> oldKeys = new HashSet<>();
+        for (PostAttachments a : oldActive) {
+            if (StringUtils.hasText(a.getFileKey())) oldKeys.add(a.getFileKey());
+            if (StringUtils.hasText(a.getThumbnailKey())) oldKeys.add(a.getThumbnailKey());
+        }
+
         postAttachmentsRepository.softDeleteByPostId(post.getId());
 
-        // 3) 새 첨부 저장 준비
         if (attachments == null || attachments.isEmpty()) {
-            // 새 목록이 비었다면: 기존 파일들 전부 삭제 후보 (커밋 후 삭제)
             registerAfterCommitDelete(oldActive, Set.of());
             return;
         }
@@ -51,6 +60,7 @@ public class PostAttachmentsService {
         int order = 0;
 
         Set<String> newKeys = new HashSet<>();
+        Set<String> consumedThisRequest = new HashSet<>();
 
         for (AttachmentRequest req : attachments) {
             if (req == null) continue;
@@ -62,6 +72,25 @@ public class PostAttachmentsService {
 
             newKeys.add(fileKey);
             if (StringUtils.hasText(thumbKey)) newKeys.add(thumbKey);
+
+            if (!oldKeys.contains(fileKey) && consumedThisRequest.add(fileKey)) {
+                presignEngine.consume(
+                        userId,
+                        UploadPurpose.COMMUNITY_POST_ATTACHMENT,
+                        UploadRefType.POST,
+                        post.getId(),
+                        fileKey
+                );
+            }
+            if (StringUtils.hasText(thumbKey) && !oldKeys.contains(thumbKey) && consumedThisRequest.add(thumbKey)) {
+                presignEngine.consume(
+                        userId,
+                        UploadPurpose.COMMUNITY_POST_ATTACHMENT,
+                        UploadRefType.POST,
+                        post.getId(),
+                        thumbKey
+                );
+            }
 
             toSave.add(PostAttachments.create(
                     post,
@@ -81,8 +110,17 @@ public class PostAttachmentsService {
         registerAfterCommitDelete(oldActive, newKeys);
     }
 
+    @Transactional
+    public void purgeAllByPostId(Long postId) {
+        List<PostAttachments> oldActive =
+                postAttachmentsRepository.findByPost_IdAndStatusTrueOrderBySortOrderAscIdAsc(postId);
+
+        postAttachmentsRepository.softDeleteByPostId(postId);
+
+        registerAfterCommitDelete(oldActive, Set.of());
+    }
+
     private void registerAfterCommitDelete(List<PostAttachments> oldActive, Set<String> newKeys) {
-        // old에서 삭제 후보 key 모으기
         Set<String> deleteKeys = new HashSet<>();
 
         for (PostAttachments a : oldActive) {
@@ -95,21 +133,16 @@ public class PostAttachmentsService {
 
         if (deleteKeys.isEmpty()) return;
 
-        // 트랜잭션이 있는 경우에만 afterCommit 등록
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
                     for (String key : deleteKeys) {
-                        try {
-                            fileStorage.delete(key); // S3/local 자동
-                        } catch (Exception ignored) {
-                        }
+                        try { fileStorage.delete(key); } catch (Exception ignored) {}
                     }
                 }
             });
         } else {
-            // 트랜잭션이 아닌 호출이면 즉시 삭제
             for (String key : deleteKeys) {
                 try { fileStorage.delete(key); } catch (Exception ignored) {}
             }
