@@ -7,6 +7,10 @@ app:
     bucket: ${AWS_S3_BUCKET}
     region: ${AWS_REGION:ap-northeast-2}
     prefix: ${AWS_S3_PREFIX:camnect}
+    presign:
+      upload-expiration-seconds: 600   # 10분
+      download-expiration-seconds: 300 # 5분
+
   auth:
     email-verification:
       expiration-minutes: 30
@@ -18,6 +22,14 @@ app:
       storage-dir: /var/app/uploads/verifications
       max-file-size-mb: 10
       max-files: 3
+      allowed-content-types:
+        - application/pdf
+        - image/jpeg
+        - image/png
+  community:
+    attachments:
+      max-files: 3
+      max-file-size-mb: 10
       allowed-content-types:
         - application/pdf
         - image/jpeg
