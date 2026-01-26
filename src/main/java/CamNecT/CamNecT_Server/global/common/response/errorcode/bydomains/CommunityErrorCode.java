@@ -26,6 +26,7 @@ public enum CommunityErrorCode implements BaseErrorCode {
     BOARD_NOT_FOUND(HttpStatus.NOT_FOUND, 43420, "게시판을 찾을 수 없습니다."),
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND, 43421, "태그를 찾을 수 없습니다."),
     POST_STATS_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, 43510, "게시글 통계 데이터가 누락되었습니다."),
+    ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND, 43430, "첨부파일을 찾을 수 없습니다."),
 
     // 439xx - 상태/규칙 위반
     CANNOT_REPLY_TO_DELETED_OR_HIDDEN(HttpStatus.CONFLICT, 43910, "삭제되었거나 숨김 처리된 댓글에는 답글을 달 수 없습니다."),

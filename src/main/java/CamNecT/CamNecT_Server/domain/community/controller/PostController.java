@@ -3,10 +3,12 @@ package CamNecT.CamNecT_Server.domain.community.controller;
 import CamNecT.CamNecT_Server.domain.community.dto.request.CreatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.request.UpdatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.response.*;
+import CamNecT.CamNecT_Server.domain.community.service.PostAttachmentDownloadService;
 import CamNecT.CamNecT_Server.domain.community.service.PostQueryService;
 import CamNecT.CamNecT_Server.domain.community.service.PostQueryService.*;
 import CamNecT.CamNecT_Server.domain.community.service.PostService;
 import CamNecT.CamNecT_Server.global.common.response.ApiResponse;
+import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,7 @@ public class PostController {
 
     private final PostService postService;
     private final PostQueryService postQueryService;
+    private final PostAttachmentDownloadService postAttachmentDownloadService;
 
     @PostMapping
     public ApiResponse<CreatePostResponse> create(
@@ -106,5 +109,16 @@ public class PostController {
             @PathVariable Long postId
     ) {
         return ApiResponse.success(postService.purchasePostAccess(userId, postId));
+    }
+
+    @GetMapping("/{postId}/attachments/{attachmentId}/download-url")
+    public ApiResponse<PresignDownloadResponse> downloadUrl(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable Long postId,
+            @PathVariable Long attachmentId,
+            @RequestParam(defaultValue = "FILE") PostAttachmentDownloadService.Kind kind
+    ) {
+        var r = postAttachmentDownloadService.presignDownload(userId, postId, attachmentId, kind);
+        return ApiResponse.success(new PresignDownloadResponse(r.downloadUrl(), r.expiresAt(), r.fileKey()));
     }
 }

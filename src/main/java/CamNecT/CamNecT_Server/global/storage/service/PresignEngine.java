@@ -4,6 +4,7 @@ import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.StorageErrorCode;
 import CamNecT.CamNecT_Server.global.storage.config.PresignProps;
 import CamNecT.CamNecT_Server.global.storage.config.S3Props;
+import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
 import CamNecT.CamNecT_Server.global.storage.dto.response.PresignUploadResponse;
 import CamNecT.CamNecT_Server.global.storage.model.UploadPurpose;
 import CamNecT.CamNecT_Server.global.storage.model.UploadRefType;
@@ -16,8 +17,11 @@ import org.springframework.util.StringUtils;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Locale;
@@ -113,7 +117,7 @@ public class PresignEngine {
             throw new CustomException(StorageErrorCode.UPLOAD_TICKET_EXPIRED_OR_USED);
         }
 
-        // ✅ 실제 S3에 올라갔는지 + size/type 일치 HEAD 검증
+        // 실제 S3에 올라갔는지 + size/type 일치 HEAD 검증
         HeadObjectResponse head;
         try {
             head = s3.headObject(HeadObjectRequest.builder()
@@ -136,6 +140,51 @@ public class PresignEngine {
         }
 
         t.markUsed(refType, refId);
+    }
+
+    @Transactional(readOnly = true)
+    public PresignDownloadResponse presignDownload(String storageKey, String filenameOrNull, String contentTypeOrNull) {
+
+        if (!StringUtils.hasText(storageKey)) {
+            throw new CustomException(StorageErrorCode.STORAGE_KEY_REQUIRED);
+        }
+
+        // (선택이지만 권장) 존재 여부 확인
+        try {
+            HeadObjectResponse head = s3.headObject(HeadObjectRequest.builder()
+                    .bucket(s3Props.bucket())
+                    .key(storageKey)
+                    .build());
+        } catch (NoSuchKeyException e) {
+            throw new CustomException(StorageErrorCode.STORAGE_NOT_FOUND);
+        } catch (S3Exception e) {
+            if (e.statusCode() == 404) throw new CustomException(StorageErrorCode.STORAGE_NOT_FOUND);
+            throw new CustomException(StorageErrorCode.STORAGE_DOWNLOAD_FAILED, e);
+        }
+
+        LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(presignProps.downloadExpirationSeconds());
+
+        GetObjectRequest.Builder getReq = GetObjectRequest.builder()
+                .bucket(s3Props.bucket())
+                .key(storageKey);
+
+        if (StringUtils.hasText(filenameOrNull)) {
+            String encoded = URLEncoder.encode(filenameOrNull, StandardCharsets.UTF_8).replace("+", "%20");
+            getReq.responseContentDisposition("attachment; filename*=UTF-8''" + encoded);
+        }
+
+        if (StringUtils.hasText(contentTypeOrNull)) {
+            getReq.responseContentType(contentTypeOrNull);
+        }
+
+        GetObjectPresignRequest presignReq = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofSeconds(presignProps.downloadExpirationSeconds()))
+                .getObjectRequest(getReq.build())
+                .build();
+
+        String url = presigner.presignGetObject(presignReq).url().toString();
+
+        return new PresignDownloadResponse(url, expiresAt, storageKey);
     }
 
     private String buildKey(String mid, String filename) {
