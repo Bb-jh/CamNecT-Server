@@ -1,0 +1,50 @@
+package CamNecT.CamNecT_Server.domain.activity.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "team_recruitments")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor @Builder
+public class TeamRecruitment {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long recruitId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "activity_id", nullable = false)
+    private ExternalActivity externalActivity;
+
+    private Long userId;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private RecruitStatus recruitStatus = RecruitStatus.RECRUITING;
+
+    @Column(nullable = false, length = 200)
+    private String title;
+
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String content;
+
+    @Column(nullable = false)
+    private LocalDate recruitDeadline;
+
+    @Builder.Default
+    private Integer recruitCount = 1;
+
+    @Builder.Default
+    private Integer commentCount = 0;
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+}
