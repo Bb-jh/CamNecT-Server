@@ -1,6 +1,5 @@
 package CamNecT.CamNecT_Server.domain.portfolio.dto.response;
 
-import CamNecT.CamNecT_Server.domain.portfolio.model.PortfolioAsset;
 import CamNecT.CamNecT_Server.domain.portfolio.model.PortfolioProject;
 
 import java.util.List;
@@ -8,6 +7,5 @@ import java.util.List;
 public record PortfolioDetailResponse(
     Boolean isMine,
     PortfolioProject portfolio,
-    List<PortfolioAsset> portfolioAssets
-) {
-}
+    List<PortfolioAssetView> portfolioAssets
+) {}

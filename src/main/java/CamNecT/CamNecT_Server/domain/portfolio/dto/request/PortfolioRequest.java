@@ -1,7 +1,5 @@
 package CamNecT.CamNecT_Server.domain.portfolio.dto.request;
 
-import org.springframework.web.multipart.MultipartFile;
-
 import java.time.LocalDate;
 import java.util.List;
 
@@ -12,7 +10,7 @@ public record PortfolioRequest(
         LocalDate endedAt,
         String project_role,
         String review,
-        MultipartFile thumbnailUrl,
-        List<MultipartFile> attachments
+        String thumbnailKey,
+        List<String> attachmentKeys
 ) {
 }
