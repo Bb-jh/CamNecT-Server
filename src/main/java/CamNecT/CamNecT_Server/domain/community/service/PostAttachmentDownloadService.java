@@ -15,6 +15,7 @@ import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.AuthErrorCode;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.CommunityErrorCode;
 import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
+import CamNecT.CamNecT_Server.global.storage.model.UploadTicket;
 import CamNecT.CamNecT_Server.global.storage.repository.UploadTicketRepository;
 import CamNecT.CamNecT_Server.global.storage.service.PresignEngine;
 import lombok.RequiredArgsConstructor;
@@ -66,8 +67,8 @@ public class PostAttachmentDownloadService {
         }
 
         var ticketOpt = uploadTicketRepository.findByStorageKey(key);
-        String filename = ticketOpt.map(t -> t.getOriginalFilename()).orElse(null);
-        String contentType = ticketOpt.map(t -> t.getContentType()).orElse(null);
+        String filename = ticketOpt.map(UploadTicket::getOriginalFilename).orElse(null);
+        String contentType = ticketOpt.map(UploadTicket::getContentType).orElse(null);
 
         return presignEngine.presignDownload(key, filename, contentType);
     }
