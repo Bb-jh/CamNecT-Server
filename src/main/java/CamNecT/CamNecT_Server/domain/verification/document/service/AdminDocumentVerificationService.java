@@ -5,16 +5,15 @@ import CamNecT.CamNecT_Server.domain.users.model.Users;
 import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationFileRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationSubmissionRepository;
-import CamNecT.CamNecT_Server.domain.verification.document.dto.DownloadResult;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.ReviewDocumentVerificationRequest;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationFile;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationSubmission;
 import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationStatus;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.VerificationErrorCode;
-import CamNecT.CamNecT_Server.global.storage.service.FileStorage;
+import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
+import CamNecT.CamNecT_Server.global.storage.service.PresignEngine;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,8 +25,8 @@ public class AdminDocumentVerificationService {
 
     private final DocumentVerificationSubmissionRepository submissionRepo;
     private final DocumentVerificationFileRepository fileRepo;
-    private final FileStorage fileStorage;
     private final UserRepository usersRepository;
+    private final PresignEngine presignEngine;
 
     @Transactional(readOnly = true)
     public Page<DocumentVerificationSubmission> list(VerificationStatus status, Pageable pageable) {
@@ -57,9 +56,9 @@ public class AdminDocumentVerificationService {
             if (user.getStatus() != UserStatus.SUSPENDED) {
                 user.changeStatus(UserStatus.ACTIVE);
             }
+            return;
         }
 
-        // REJECT
         String reason = (req.reason() == null) ? "" : req.reason().trim();
         if (reason.isBlank()) {
             throw new CustomException(VerificationErrorCode.REJECT_REASON_REQUIRED);
@@ -68,20 +67,14 @@ public class AdminDocumentVerificationService {
     }
 
     @Transactional(readOnly = true)
-    public DownloadResult downloadFileWithMeta(Long submissionId, Long fileId) {
+    public PresignDownloadResponse downloadUrl(Long submissionId, Long fileId) {
         DocumentVerificationFile f = fileRepo.findByIdAndSubmission_Id(fileId, submissionId)
                 .orElseThrow(() -> new CustomException(VerificationErrorCode.FILE_NOT_FOUND));
 
-        Resource resource = fileStorage.loadAsResource(f.getStorageKey());
-
-        String ct = (f.getContentType() == null || f.getContentType().isBlank())
-                ? "application/octet-stream" : f.getContentType();
-
+        String ct = (f.getContentType() == null) ? "" : f.getContentType();
         String name = (f.getOriginalFilename() == null || f.getOriginalFilename().isBlank())
                 ? "document" : f.getOriginalFilename();
 
-        return new DownloadResult(resource, name, ct, f.getSize());
+        return presignEngine.presignDownload(f.getStorageKey(), name, ct);
     }
 }
-
-
