@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.global.common.config;
+package CamNecT.CamNecT_Server.global.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

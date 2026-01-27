@@ -7,6 +7,7 @@ import CamNecT.CamNecT_Server.domain.users.model.Users;
 import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.AuthErrorCode;
+import CamNecT.CamNecT_Server.global.jwt.JwtFacade;
 import CamNecT.CamNecT_Server.global.jwt.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class LoginService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final JwtFacade jwtFacade;
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest req) {
@@ -39,8 +41,8 @@ public class LoginService {
             throw new CustomException(AuthErrorCode.USER_SUSPENDED);
         }
 
-        String access = jwtUtil.generateAccessToken(user.getUsername());
-        String refresh = jwtUtil.generateRefreshToken(user.getUsername());
+        String access = jwtFacade.createAccessToken(user);
+        String refresh = jwtFacade.createRefreshToken(user);
 
         return new LoginResponse(
                 "Bearer",

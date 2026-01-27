@@ -54,6 +54,11 @@ public class Users {
     @Column(name = "status", nullable = false, length = 30)
     private UserStatus status = UserStatus.EMAIL_PENDING;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
+    private UserRole role = UserRole.USER;
+
     @CreationTimestamp // 생성 시 자동으로 시간 입력
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

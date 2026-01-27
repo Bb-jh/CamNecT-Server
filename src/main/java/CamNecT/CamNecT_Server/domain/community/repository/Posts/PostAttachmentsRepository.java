@@ -32,6 +32,8 @@ public interface PostAttachmentsRepository extends JpaRepository<PostAttachments
             where a.post.id = :postId
               and a.status = true
            """)
-    int softDeleteByPostId(@Param("postId") Long postId);
+    void softDeleteByPostId(@Param("postId") Long postId);
+
+    Optional<PostAttachments> findByIdAndPost_IdAndStatusTrue(Long id, Long postId);
 }
 
