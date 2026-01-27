@@ -6,13 +6,9 @@ import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationSta
 import CamNecT.CamNecT_Server.domain.verification.document.service.AdminDocumentVerificationService;
 import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

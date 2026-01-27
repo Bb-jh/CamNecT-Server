@@ -4,7 +4,6 @@ import CamNecT.CamNecT_Server.domain.verification.document.dto.DocumentVerificat
 import CamNecT.CamNecT_Server.domain.verification.document.dto.DocumentVerificationListItemResponse;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.SubmitDocumentVerificationRequest;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.SubmitDocumentVerificationResponse;
-import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentType;
 import CamNecT.CamNecT_Server.domain.verification.document.service.DocumentVerificationService;
 import CamNecT.CamNecT_Server.global.common.auth.UserId;
 import CamNecT.CamNecT_Server.global.storage.dto.request.PresignUploadRequest;
@@ -13,9 +12,7 @@ import CamNecT.CamNecT_Server.global.storage.dto.response.PresignUploadResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 

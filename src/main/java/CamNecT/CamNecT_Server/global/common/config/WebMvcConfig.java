@@ -1,5 +1,6 @@
 package CamNecT.CamNecT_Server.global.common.config;
 
+import CamNecT.CamNecT_Server.global.common.auth.AdminRoleInterceptor;
 import CamNecT.CamNecT_Server.global.common.auth.AuthInterceptor;
 import CamNecT.CamNecT_Server.global.common.auth.UserIdArgumentResolver;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     private final UserIdArgumentResolver userIdArgumentResolver;
     private final AuthInterceptor authInterceptor;
+    private final AdminRoleInterceptor adminRoleInterceptor;
 
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
@@ -32,5 +34,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/v3/api-docs/**",
                         "/swagger-ui.html"
                 );
+        registry.addInterceptor(adminRoleInterceptor)
+                .addPathPatterns("/api/admin/**");
     }
 }
