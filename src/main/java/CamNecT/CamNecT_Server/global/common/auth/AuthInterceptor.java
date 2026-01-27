@@ -1,5 +1,7 @@
 package CamNecT.CamNecT_Server.global.common.auth;
 
+import CamNecT.CamNecT_Server.global.common.exception.CustomException;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.AuthErrorCode;
 import CamNecT.CamNecT_Server.global.jwt.JwtUtil;
 import CamNecT.CamNecT_Server.global.jwt.model.TokenType;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,14 +31,17 @@ public class AuthInterceptor implements HandlerInterceptor {
         // 토큰 추출
         String token = extractBearer(request);
         //토큰 유효성 검사
-        if(!jwtUtil.validate(token))
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다.");
-        //토큰 타입 : Access인지 검사
-        if(jwtUtil.getTokenType(token) != TokenType.ACCESS)
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Access Token이 필요합니다.");
-        // username & role를 attribute로 저장
+        jwtUtil.validateOrThrow(token);
 
-        request.setAttribute("userId", jwtUtil.getUserId(token));
+        if (jwtUtil.getTokenType(token) != TokenType.ACCESS) {
+            throw new CustomException(AuthErrorCode.ACCESS_TOKEN_REQUIRED);
+            // 없으면 AuthErrorCode에 추가하거나, UNAUTHORIZED 계열로 매핑
+        }
+
+        Long userId = jwtUtil.getUserId(token);
+        request.setAttribute("userId", userId);
+
+        request.setAttribute("role", jwtUtil.getRole(token).name());
 
         return true;
     }

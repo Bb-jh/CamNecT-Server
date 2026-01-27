@@ -9,14 +9,15 @@ import CamNecT.CamNecT_Server.domain.verification.email.repository.EmailVerifica
 import CamNecT.CamNecT_Server.domain.users.model.UserStatus;
 import CamNecT.CamNecT_Server.domain.users.model.Users;
 import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
+import CamNecT.CamNecT_Server.global.common.exception.CustomException;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.AuthErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+
 import java.util.regex.Pattern;
 
 @Service
@@ -34,17 +35,15 @@ public class SignupService {
 
     @Transactional
     public SignupResponse signup(SignupRequest req) {
-        // 1) 필수 약관 체크
         if (!req.agreements().serviceTerms() || !req.agreements().privacyTerms()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "TERMS_REQUIRED");
+            throw new CustomException(AuthErrorCode.TERMS_REQUIRED);
         }
 
-        // 2) 중복 체크
         if (userRepository.existsByEmail(req.email())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "EMAIL_ALREADY_EXISTS");
+            throw new CustomException(AuthErrorCode.EMAIL_ALREADY_EXISTS);
         }
         if (userRepository.existsByUsername(req.username())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "USERNAME_ALREADY_EXISTS");
+            throw new CustomException(AuthErrorCode.USERNAME_ALREADY_EXISTS);
         }
 
         // 3)비밀번호 체크
@@ -90,7 +89,7 @@ public class SignupService {
 
     private void validatePassword(String pw) {
         if (pw == null || !PASSWORD_PATTERN.matcher(pw).matches()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_PASSWORD");
+            throw new CustomException(AuthErrorCode.INVALID_PASSWORD);
         }
     }
 }

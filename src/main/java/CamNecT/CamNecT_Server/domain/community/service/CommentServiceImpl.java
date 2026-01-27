@@ -13,6 +13,8 @@ import CamNecT.CamNecT_Server.domain.community.repository.Comments.CommentLikesR
 import CamNecT.CamNecT_Server.domain.community.repository.Comments.CommentsRepository;
 import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostStatsRepository;
 import CamNecT.CamNecT_Server.domain.community.repository.Posts.PostsRepository;
+import CamNecT.CamNecT_Server.global.common.exception.CustomException;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.CommunityErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -35,25 +37,25 @@ public class CommentServiceImpl implements CommentService {
         if (userId == null) userId = 1L;
 
         Posts post = postsRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("post not found: " + postId));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.POST_NOT_FOUND));
 
         Comments parent = null;
         if (req.parentCommentId() != null) {
             parent = commentsRepository.findById(req.parentCommentId())
-                    .orElseThrow(() -> new IllegalArgumentException("parent comment not found"));
+                    .orElseThrow(() -> new CustomException(CommunityErrorCode.PARENT_COMMENT_NOT_FOUND));
 
             if (!Objects.equals(parent.getPost().getId(), postId)) {
-                throw new IllegalArgumentException("parent comment not in post");
+                throw new CustomException(CommunityErrorCode.PARENT_COMMENT_NOT_IN_POST);
             }
 
             // 부모가 삭제/숨김이면 자식 댓글 추가 불가
             if (parent.getStatus() == CommentStatus.DELETED || parent.getStatus() == CommentStatus.HIDDEN) {
-                throw new IllegalArgumentException("cannot reply to deleted/hidden parent");
+                throw new CustomException(CommunityErrorCode.CANNOT_REPLY_TO_DELETED_OR_HIDDEN);
             }
 
             // 2뎁스 제한: 부모가 이미 대댓글이면 금지
             if (parent.getParent() != null) {
-                throw new IllegalArgumentException("max depth is 2");
+                throw new CustomException(CommunityErrorCode.COMMENT_MAX_DEPTH_EXCEEDED);
             }
         }
 
@@ -77,10 +79,10 @@ public class CommentServiceImpl implements CommentService {
         if (userId == null) userId = 1L;
 
         Comments comment = commentsRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("comment not found: " + commentId));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.COMMENT_NOT_FOUND));
 
         if (!Objects.equals(comment.getUserId(), userId)) {
-            throw new IllegalArgumentException("forbidden");
+            throw new CustomException(CommunityErrorCode.COMMENT_FORBIDDEN);
         }
 
         comment.update(req.content());
@@ -93,10 +95,10 @@ public class CommentServiceImpl implements CommentService {
         if (userId == null) userId = 1L;
 
         Comments comment = commentsRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("comment not found: " + commentId));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.COMMENT_NOT_FOUND));
 
         if (!Objects.equals(comment.getUserId(), userId)) {
-            throw new IllegalArgumentException("forbidden");
+            throw new CustomException(CommunityErrorCode.COMMENT_FORBIDDEN);
         }
 
         // 중복 삭제 방지 (카운트 두 번 깎이는 거 방지)
@@ -120,7 +122,7 @@ public class CommentServiceImpl implements CommentService {
         if (userId == null) userId = 1L;
 
         Comments comment = commentsRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("comment not found: " + commentId));
+                .orElseThrow(() -> new CustomException(CommunityErrorCode.COMMENT_NOT_FOUND));
 
         boolean liked;
         if (commentLikesRepository.existsByComment_IdAndUserId(commentId, userId)) {
@@ -142,9 +144,11 @@ public class CommentServiceImpl implements CommentService {
     @Transactional(readOnly = true)
     @Override
     public List<CommentRow> list(Long postId, int size) {
-        int limit = Math.min(Math.max(size, 1), 50);
+        if (!postsRepository.existsById(postId)) {
+            throw new CustomException(CommunityErrorCode.POST_NOT_FOUND);
+        }
 
-        // 루트 댓글: PUBLISHED + DELETED 둘 다 보여주고 싶어서 2번 조회 후 머지(초기엔 OK)
+        int limit = Math.min(Math.max(size, 1), 50);
         var pageable = PageRequest.of(0, limit);
 
         List<Comments> roots = new ArrayList<>();

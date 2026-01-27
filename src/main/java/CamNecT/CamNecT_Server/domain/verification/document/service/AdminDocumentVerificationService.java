@@ -5,14 +5,15 @@ import CamNecT.CamNecT_Server.domain.users.model.Users;
 import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationFileRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationSubmissionRepository;
-import CamNecT.CamNecT_Server.domain.verification.document.dto.DownloadResult;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.ReviewDocumentVerificationRequest;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationFile;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationSubmission;
 import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationStatus;
-import CamNecT.CamNecT_Server.global.storage.FileStorage;
+import CamNecT.CamNecT_Server.global.common.exception.CustomException;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.VerificationErrorCode;
+import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
+import CamNecT.CamNecT_Server.global.storage.service.PresignEngine;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,8 +25,8 @@ public class AdminDocumentVerificationService {
 
     private final DocumentVerificationSubmissionRepository submissionRepo;
     private final DocumentVerificationFileRepository fileRepo;
-    private final FileStorage fileStorage;
     private final UserRepository usersRepository;
+    private final PresignEngine presignEngine;
 
     @Transactional(readOnly = true)
     public Page<DocumentVerificationSubmission> list(VerificationStatus status, Pageable pageable) {
@@ -35,51 +36,45 @@ public class AdminDocumentVerificationService {
     @Transactional(readOnly = true)
     public DocumentVerificationSubmission get(Long submissionId) {
         return submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
     }
 
     @Transactional
     public void review(Long adminId, Long submissionId, ReviewDocumentVerificationRequest req) {
         DocumentVerificationSubmission s = submissionRepo.findById(submissionId)
-                .orElseThrow(() -> new IllegalArgumentException("요청을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
 
         if (s.getStatus() != VerificationStatus.PENDING) {
-            throw new IllegalStateException("PENDING 상태만 처리할 수 있습니다.");
+            throw new CustomException(VerificationErrorCode.ONLY_PENDING_CAN_REVIEW);
         }
 
         Users user = usersRepository.findById(s.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.USER_NOT_FOUND));
 
         if (req.decision() == ReviewDocumentVerificationRequest.Decision.APPROVE) {
             s.approve(adminId);
             if (user.getStatus() != UserStatus.SUSPENDED) {
                 user.changeStatus(UserStatus.ACTIVE);
             }
+            return;
         }
 
-        // REJECT
         String reason = (req.reason() == null) ? "" : req.reason().trim();
         if (reason.isBlank()) {
-            throw new IllegalArgumentException("반려 사유가 필요합니다.");
+            throw new CustomException(VerificationErrorCode.REJECT_REASON_REQUIRED);
         }
         s.reject(adminId, reason);
     }
 
     @Transactional(readOnly = true)
-    public DownloadResult downloadFileWithMeta(Long submissionId, Long fileId) {
+    public PresignDownloadResponse downloadUrl(Long submissionId, Long fileId) {
         DocumentVerificationFile f = fileRepo.findByIdAndSubmission_Id(fileId, submissionId)
-                .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.FILE_NOT_FOUND));
 
-        Resource resource = fileStorage.loadAsResource(f.getStorageKey());
-
-        String ct = (f.getContentType() == null || f.getContentType().isBlank())
-                ? "application/octet-stream" : f.getContentType();
-
+        String ct = (f.getContentType() == null) ? "" : f.getContentType();
         String name = (f.getOriginalFilename() == null || f.getOriginalFilename().isBlank())
                 ? "document" : f.getOriginalFilename();
 
-        return new DownloadResult(resource, name, ct, f.getSize());
+        return presignEngine.presignDownload(f.getStorageKey(), name, ct);
     }
 }
-
-

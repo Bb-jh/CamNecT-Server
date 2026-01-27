@@ -4,7 +4,8 @@ import CamNecT.CamNecT_Server.domain.point.model.*;
 import CamNecT.CamNecT_Server.domain.point.repository.PointTransactionRepository;
 import CamNecT.CamNecT_Server.domain.point.repository.PointWalletRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.UserErrorCode;
 import jakarta.persistence.OptimisticLockException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -42,7 +43,7 @@ public class PointService {
     @Transactional
     public void changePoint(Long userId, int amount, TransactionType type, PointEvent event) {
         if (event == null || event.source() == null) {
-            throw new IllegalArgumentException("PointEvent/source is required");
+            throw new CustomException(UserErrorCode.POINT_EVENT_REQUIRED);
         }
 
 
@@ -54,7 +55,7 @@ public class PointService {
             PointWallet wallet = getOrCreateWallet(userId);
 
             if (type == TransactionType.SPEND && wallet.getBalance() < amount) {
-                throw new CustomException(ErrorCode.INSUFFICIENT_POINT);
+                throw new CustomException(UserErrorCode.INSUFFICIENT_POINT);
             }
 
             int signedAmount = type == TransactionType.SPEND ? -amount : amount;
@@ -94,7 +95,7 @@ public class PointService {
                         );
                     } catch (DataIntegrityViolationException e) {
                         return walletRepository.findByUserId(userId)
-                                .orElseThrow();
+                                .orElseThrow(() -> new CustomException(UserErrorCode.WALLET_CREATE_FAILED, e));
                     }
                 });
     }

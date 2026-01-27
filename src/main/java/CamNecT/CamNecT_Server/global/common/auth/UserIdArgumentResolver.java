@@ -1,7 +1,7 @@
 package CamNecT.CamNecT_Server.global.common.auth;
 
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
 import CamNecT.CamNecT_Server.global.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.MethodParameter;
@@ -24,15 +24,17 @@ public class UserIdArgumentResolver implements HandlerMethodArgumentResolver {
     }
 
     @Override
-    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
-        String authHeader = webRequest.getHeader("Authorization");
+    public Object resolveArgument(MethodParameter parameter,
+                                  ModelAndViewContainer mavContainer,
+                                  NativeWebRequest webRequest,
+                                  WebDataBinderFactory binderFactory) {
 
+        String authHeader = webRequest.getHeader("Authorization");
         if (authHeader == null || authHeader.isBlank()) {
             throw new CustomException(ErrorCode.UNAUTHORIZED, new IllegalArgumentException("Authorization 헤더가 존재하지 않습니다."));
         }
 
         String token = extractBearerToken(authHeader);
-
         return jwtUtil.getUserId(token);
     }
 

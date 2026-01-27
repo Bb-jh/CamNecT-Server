@@ -2,14 +2,17 @@ package CamNecT.CamNecT_Server.domain.verification.document.controller;
 
 import CamNecT.CamNecT_Server.domain.verification.document.dto.DocumentVerificationDetailResponse;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.DocumentVerificationListItemResponse;
+import CamNecT.CamNecT_Server.domain.verification.document.dto.SubmitDocumentVerificationRequest;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.SubmitDocumentVerificationResponse;
-import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentType;
 import CamNecT.CamNecT_Server.domain.verification.document.service.DocumentVerificationService;
+import CamNecT.CamNecT_Server.global.common.auth.UserId;
+import CamNecT.CamNecT_Server.global.storage.dto.request.PresignUploadRequest;
+import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
+import CamNecT.CamNecT_Server.global.storage.dto.response.PresignUploadResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -20,36 +23,49 @@ public class DocumentVerificationController {
 
     private final DocumentVerificationService service;
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping("/uploads/presign")
+    public PresignUploadResponse presignUpload(
+            @UserId Long userId,
+            @RequestBody @Valid PresignUploadRequest req
+    ) {
+        return service.presignUpload(userId, req);
+    }
+
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public SubmitDocumentVerificationResponse submit(
-            // TODO: @LoginUser Long userId 로 교체 권장
-            @RequestParam Long userId,
-            @RequestParam DocumentType docType,
-            @RequestPart("documents") List<MultipartFile> documents
+            @UserId Long userId,
+            @RequestBody @Valid SubmitDocumentVerificationRequest req
     ) {
-        return service.submit(userId, docType, documents);
+        return service.submit(userId, req.docType(), req.documentKeys());
     }
 
     @GetMapping("/me")
-    public List<DocumentVerificationListItemResponse> mySubmissions(
-            @RequestParam Long userId
-    ) {
+    public List<DocumentVerificationListItemResponse> mySubmissions(@UserId Long userId) {
         return service.mySubmissions(userId);
     }
 
     @GetMapping("/{submissionId}")
     public DocumentVerificationDetailResponse mySubmissionDetail(
-            @RequestParam Long userId,
+            @UserId Long userId,
             @PathVariable Long submissionId
     ) {
         return service.mySubmissionDetail(userId, submissionId);
     }
 
+    @GetMapping("/{submissionId}/files/{fileId}/download-url")
+    public PresignDownloadResponse myFileDownloadUrl(
+            @UserId Long userId,
+            @PathVariable Long submissionId,
+            @PathVariable Long fileId
+    ) {
+        return service.myFileDownloadUrl(userId, submissionId, fileId);
+    }
+
     @DeleteMapping("/{submissionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancel(
-            @RequestParam Long userId,
+            @UserId Long userId,
             @PathVariable Long submissionId
     ) {
         service.cancel(userId, submissionId);

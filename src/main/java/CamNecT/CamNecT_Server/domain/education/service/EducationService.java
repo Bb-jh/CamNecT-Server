@@ -9,7 +9,7 @@ import CamNecT.CamNecT_Server.global.tag.repository.MajorRepository;
 import CamNecT.CamNecT_Server.domain.users.model.Users;
 import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
-import CamNecT.CamNecT_Server.global.common.response.ErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
 import CamNecT.CamNecT_Server.global.tag.model.Institutions;
 import CamNecT.CamNecT_Server.global.tag.model.Majors;
 import lombok.RequiredArgsConstructor;

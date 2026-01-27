@@ -1,4 +1,16 @@
 app:
+  storage:
+    type: s3 # local | s3
+  local:
+    base-dir: /var/app/uploads
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_REGION:ap-northeast-2}
+    prefix: ${AWS_S3_PREFIX:camnect}
+    presign:
+      upload-expiration-seconds: 600   # 10분
+      download-expiration-seconds: 300 # 5분
+
   auth:
     email-verification:
       expiration-minutes: 30
@@ -6,7 +18,7 @@ app:
         subject: "CamNecT 이메일 인증번호"
   verification:
     document:
-      storage: s3 #local | s3
+      #storage: s3 #local | s3
       storage-dir: /var/app/uploads/verifications
       max-file-size-mb: 10
       max-files: 3
@@ -14,10 +26,14 @@ app:
         - application/pdf
         - image/jpeg
         - image/png
-  s3:
-    bucket: ${AWS_S3_BUCKET}
-    region: ${AWS_REGION:ap-northeast-2}
-    prefix: ${AWS_S3_PREFIX:verifications}
+  community:
+    attachments:
+      max-files: 3
+      max-file-size-mb: 10
+      allowed-content-types:
+        - application/pdf
+        - image/jpeg
+        - image/png
 
 
 
