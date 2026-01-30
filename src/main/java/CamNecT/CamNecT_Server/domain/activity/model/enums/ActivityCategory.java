@@ -1,4 +1,4 @@
-package CamNecT.CamNecT_Server.domain.activity.model;
+package CamNecT.CamNecT_Server.domain.activity.model.enums;
 
 public enum ActivityCategory {
     STUDY("스터디"),

@@ -24,9 +24,9 @@ public class QPostAttachments extends EntityPathBase<PostAttachments> {
 
     public final DateTimePath<java.time.LocalDateTime> createdAt = createDateTime("createdAt", java.time.LocalDateTime.class);
 
-    public final NumberPath<Long> fileSize = createNumber("fileSize", Long.class);
+    public final StringPath fileKey = createString("fileKey");
 
-    public final StringPath fileUrl = createString("fileUrl");
+    public final NumberPath<Long> fileSize = createNumber("fileSize", Long.class);
 
     public final NumberPath<Integer> height = createNumber("height", Integer.class);
 
@@ -38,7 +38,7 @@ public class QPostAttachments extends EntityPathBase<PostAttachments> {
 
     public final BooleanPath status = createBoolean("status");
 
-    public final StringPath thumbnailUrl = createString("thumbnailUrl");
+    public final StringPath thumbnailKey = createString("thumbnailKey");
 
     public final NumberPath<Integer> width = createNumber("width", Integer.class);
 

@@ -1,9 +1,11 @@
-package CamNecT.CamNecT_Server.domain.activity.model;
+package CamNecT.CamNecT_Server.domain.activity.model.external_activity;
 
+import CamNecT.CamNecT_Server.domain.activity.dto.request.ActivityRequest;
+import CamNecT.CamNecT_Server.domain.activity.model.enums.ActivityCategory;
+import CamNecT.CamNecT_Server.domain.activity.model.enums.ActivityStatus;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,6 +13,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "external_activities")
 @Getter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ExternalActivity {
 
@@ -28,16 +32,22 @@ public class ExternalActivity {
     @Column(length = 100)
     private String organizer;
 
+    @JoinColumn(name = "user_id")
+    private Long userId;
+
     @Column(length = 50)
     private String region;
 
     @Column(length = 300)
     private String targetDescription;
 
-    @Column(nullable = false)
+    @Column(length = 500)
+    private String thumbnailUrl;
+
+    @Column
     private LocalDate applyStartDate;
 
-    @Column(nullable = false)
+    @Column
     private LocalDate applyEndDate;
 
     private LocalDate resultAnnounceDate;
@@ -45,13 +55,21 @@ public class ExternalActivity {
     @Column(length = 500)
     private String officialUrl;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ActivityStatus status = ActivityStatus.OPEN;
 
+    @CreatedDate
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
     @Column(columnDefinition = "TEXT")
     private String context;
+
+    public void update(ActivityRequest request) {
+        this.title = request.title();
+        this.category = request.category();
+        this.context = request.content();
+    }
 }

@@ -1,5 +1,6 @@
-package CamNecT.CamNecT_Server.domain.activity.model;
+package CamNecT.CamNecT_Server.domain.activity.model.recruitment;
 
+import CamNecT.CamNecT_Server.domain.activity.model.enums.RecruitStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -14,13 +15,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor @Builder
 public class TeamRecruitment {
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long recruitId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "activity_id", nullable = false)
-    private ExternalActivity externalActivity;
+    private Long activityId;
 
+    @JoinColumn(name = "user_id", nullable = false)
     private Long userId;
 
     @Enumerated(EnumType.STRING)

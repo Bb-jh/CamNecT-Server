@@ -31,6 +31,8 @@ public class QUsers extends EntityPathBase<Users> {
 
     public final StringPath phoneNum = createString("phoneNum");
 
+    public final EnumPath<UserRole> role = createEnum("role", UserRole.class);
+
     public final EnumPath<UserStatus> status = createEnum("status", UserStatus.class);
 
     public final BooleanPath termsPrivacyAgreed = createBoolean("termsPrivacyAgreed");
