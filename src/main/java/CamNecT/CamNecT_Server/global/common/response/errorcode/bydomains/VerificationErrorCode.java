@@ -11,7 +11,7 @@ public enum VerificationErrorCode implements BaseErrorCode {
 
     // 420xx - 요청/검증
     DOCUMENTS_REQUIRED(HttpStatus.BAD_REQUEST, 42020, "서류 파일은 최소 1개 필요합니다."),
-    TOO_MANY_FILES(HttpStatus.BAD_REQUEST, 42021, "업로드 가능한 파일 개수(3)를 초과했습니다."),
+    TOO_MANY_FILES(HttpStatus.BAD_REQUEST, 42021, "업로드 가능한 파일 개수(1)를 초과했습니다."),
     EMPTY_FILE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, 42022, "빈 파일은 업로드할 수 없습니다."),
     REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, 42011, "반려 사유가 필요합니다."),
     NO_ACTIVE_CODE(HttpStatus.BAD_REQUEST, 42030, "인증 코드가 존재하지 않습니다."),

@@ -5,12 +5,25 @@ import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationSta
 
 import java.time.LocalDateTime;
 
-public record DocumentVerificationDetailResponse(
+public record AdminDocumentVerificationDetailResponse(
         Long submissionId,
-        DocumentType docType,
         VerificationStatus status,
+        DocumentType docType,
         LocalDateTime submittedAt,
         LocalDateTime reviewedAt,
         String rejectReason,
-        DocumentVerificationFileDto file
+
+        Long userId,
+        String username,
+        String phoneNum,
+        String name,
+
+        String studentNo,
+        Integer yearLevel,
+        Long institutionId,
+        Long majorId,
+
+        String originalFilename,
+        String contentType,
+        long size
 ) {}

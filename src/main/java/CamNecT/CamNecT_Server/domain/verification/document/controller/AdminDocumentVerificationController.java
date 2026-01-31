@@ -1,15 +1,17 @@
 package CamNecT.CamNecT_Server.domain.verification.document.controller;
 
-import CamNecT.CamNecT_Server.domain.verification.document.dto.ReviewDocumentVerificationRequest;
-import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationSubmission;
+import CamNecT.CamNecT_Server.domain.verification.document.dto.AdminDocumentVerificationDetailResponse;
+import CamNecT.CamNecT_Server.domain.verification.document.dto.AdminDocumentVerificationListItemResponse;
+import CamNecT.CamNecT_Server.domain.verification.document.dto.AdminReviewDocumentVerificationRequest;
 import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationStatus;
 import CamNecT.CamNecT_Server.domain.verification.document.service.AdminDocumentVerificationService;
+import CamNecT.CamNecT_Server.global.common.auth.UserId;
 import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,7 +22,7 @@ public class AdminDocumentVerificationController {
     private final AdminDocumentVerificationService service;
 
     @GetMapping
-    public Page<DocumentVerificationSubmission> list(
+    public Page<AdminDocumentVerificationListItemResponse> list(
             @RequestParam(defaultValue = "PENDING") VerificationStatus status,
             Pageable pageable
     ) {
@@ -28,25 +30,22 @@ public class AdminDocumentVerificationController {
     }
 
     @GetMapping("/{submissionId}")
-    public DocumentVerificationSubmission get(@PathVariable Long submissionId) {
+    public AdminDocumentVerificationDetailResponse get(@PathVariable Long submissionId) {
         return service.get(submissionId);
     }
 
     @PatchMapping("/{submissionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void review(
-            @RequestParam Long adminId,
+            @UserId Long adminId,
             @PathVariable Long submissionId,
-            @RequestBody @Validated ReviewDocumentVerificationRequest req
+            @RequestBody @Valid AdminReviewDocumentVerificationRequest req
     ) {
         service.review(adminId, submissionId, req);
     }
 
-    @GetMapping("/{submissionId}/files/{fileId}/download-url")
-    public PresignDownloadResponse downloadUrl(
-            @PathVariable Long submissionId,
-            @PathVariable Long fileId
-    ) {
-        return service.downloadUrl(submissionId, fileId);
+    @GetMapping("/{submissionId}/download-url")
+    public PresignDownloadResponse downloadUrl(@PathVariable Long submissionId) {
+        return service.downloadUrl(submissionId);
     }
 }

@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "user_tag_map")
+@Table(name = "user_tag_map",
+        uniqueConstraints = @UniqueConstraint(name="uk_user_tag", columnNames={"user_id","tag_id"})
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor

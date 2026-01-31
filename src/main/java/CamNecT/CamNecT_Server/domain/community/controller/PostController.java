@@ -17,8 +17,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Locale;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/community/posts")
@@ -136,9 +134,5 @@ public class PostController {
         return ApiResponse.success(
                 postAttachmentDownloadService.presignDownload(userId, postId, attachmentId, kind)
         );
-    }
-
-    private String normalize(String ct) {
-        return (ct == null) ? "" : ct.trim().toLowerCase(Locale.ROOT);
     }
 }

@@ -29,7 +29,8 @@ public enum AuthErrorCode implements BaseErrorCode {
 
     // 419xx - 충돌
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, 41901, "이미 가입된 이메일입니다."),
-    USERNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, 41902, "이미 사용 중인 아이디입니다.");
+    USERNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, 41902, "이미 사용 중인 아이디입니다."),
+    PHONENUM_ALREADY_EXISTS(HttpStatus.CONFLICT, 41903, "이미 사용 중인 전화번호입니다.");
 
     private final HttpStatus httpStatus;
     private final int code;

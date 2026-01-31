@@ -42,14 +42,21 @@ public class UserProfile {
     @Column(name = "major_id", nullable = false)
     private Long majorId;
 
-    public void updateOnboardingProfile(String bio, String profileImageUrl) {
+    public void updateOnboardingProfile(String bio, String profileImageKey) {
         if (bio != null) {
             String b = bio.trim();
             this.bio = b.isBlank() ? null : b;
         }
-        if (profileImageUrl != null) {
-            String u = profileImageUrl.trim();
+        if (profileImageKey != null) {
+            String u = profileImageKey.trim();
             this.profileImageUrl = u.isBlank() ? null : u;
         }
+    }
+
+    public void applyVerifiedInfo(String studentNo, Integer yearLevel, Long institutionId, Long majorId) {
+        this.studentNo = studentNo;
+        this.yearLevel = yearLevel;
+        this.institutionId = institutionId;
+        this.majorId = majorId;
     }
 }

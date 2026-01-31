@@ -23,7 +23,7 @@ public enum UserErrorCode implements BaseErrorCode {
 
     // 443xx - 권한/상태
     USER_SUSPENDED(HttpStatus.FORBIDDEN, 44302, "정지된 사용자입니다."),
-
+    USER_NOT_ADMIN(HttpStatus.FORBIDDEN, 44303, "관리자 유저가 아닙니다."),
     PORTFOLIO_FORBIDDEN(HttpStatus.FORBIDDEN, 44310, "포트폴리오에 대한 권한이 없습니다."),
 
     // 444xx - 리소스

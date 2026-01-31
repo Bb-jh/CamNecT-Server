@@ -32,7 +32,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/auth/**",
                         "/swagger-ui/**",
                         "/v3/api-docs/**",
-                        "/swagger-ui.html"
+                        "/swagger-ui.html",
+                        "/api/verification/email/verify-code"
                 );
         registry.addInterceptor(adminRoleInterceptor)
                 .addPathPatterns("/api/admin/**");

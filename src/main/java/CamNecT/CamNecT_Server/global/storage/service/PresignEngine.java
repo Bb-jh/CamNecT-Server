@@ -46,7 +46,8 @@ public class PresignEngine {
     private static final Map<String, String> EXT_BY_CONTENT_TYPE = Map.of(
             "application/pdf", ".pdf",
             "image/jpeg", ".jpg",
-            "image/png", ".png"
+            "image/png", ".png",
+            "image/webp", ".webp"
     );
 
     @Transactional
@@ -122,6 +123,7 @@ public class PresignEngine {
         if (!Objects.equals(t.getUserId(), userId)) throw new CustomException(StorageErrorCode.UPLOAD_TICKET_FORBIDDEN);
         if (t.getPurpose() != purpose) throw new CustomException(StorageErrorCode.UPLOAD_TICKET_FORBIDDEN);
         if (!t.isUsable(LocalDateTime.now())) throw new CustomException(StorageErrorCode.UPLOAD_TICKET_EXPIRED_OR_USED);
+        if (finalKeyPrefix.startsWith("temp/")) throw new CustomException(StorageErrorCode.STORAGE_INVALID_PREFIX);
 
         HeadObjectResponse head;
         try {
