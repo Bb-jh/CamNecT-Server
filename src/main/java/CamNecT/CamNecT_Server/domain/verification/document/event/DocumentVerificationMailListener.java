@@ -1,6 +1,5 @@
 package CamNecT.CamNecT_Server.domain.verification.document.event;
 
-import CamNecT.CamNecT_Server.domain.verification.document.dto.ReviewDocumentVerificationRequest;
 import CamNecT.CamNecT_Server.global.mail.EmailSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
