@@ -253,6 +253,7 @@ public class PostServiceImpl implements PostService {
         if (comment.getStatus() != CommentStatus.PUBLISHED) {
             throw new CustomException(CommunityErrorCode.CANNOT_ACCEPT_UNPUBLISHED_COMMENT);
         }
+        //TODO 댓글 채택시 포인트 제공 로직이 없어요.
 
         try {
             acceptedCommentsRepository.save(AcceptedComments.of(post, comment, userId));

@@ -25,10 +25,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,16 +44,9 @@ public class PortfolioService {
 
         return rows.stream()
                 .map(r -> {
-                    String key = r.thumbnailUrl();
-                    if (!StringUtils.hasText(key) || "기본이미지".equals(key)) {
-                        return new PortfolioPreviewResponse(r.portfolioId(), r.title(), null);
-                    }
-                    try {
-                        String url = presignEngine.presignDownload(key, "thumbnail", null).downloadUrl();
-                        return new PortfolioPreviewResponse(r.portfolioId(), r.title(), url);
-                    } catch (Exception e) {
-                        return new PortfolioPreviewResponse(r.portfolioId(), r.title(), null);
-                    }
+                    String key = r.thumbnailUrl(); // DB에 저장된 건 key
+                    String url = presignOrNull(key, null, null);
+                    return new PortfolioPreviewResponse(r.portfolioId(), r.title(), url);
                 })
                 .toList();
     }
@@ -107,41 +97,45 @@ public class PortfolioService {
 
         PortfolioProject saved = portfolioRepository.save(project);
 
+        String finalThumbPrefix = "portfolio/user-" + userId + "/portfolio-" + saved.getPortfolioId() + "/thumbnail";
+        String finalAssetPrefix = "portfolio/user-" + userId + "/portfolio-" + saved.getPortfolioId() + "/assets";
+
         // thumbnail
         if (StringUtils.hasText(request.thumbnailKey())) {
-            presignEngine.consume(
+            String finalKey = presignEngine.consume(
                     userId,
                     UploadPurpose.PORTFOLIO_ATTACHMENT,
                     UploadRefType.PORTFOLIO,
                     saved.getPortfolioId(),
-                    request.thumbnailKey()
+                    request.thumbnailKey(),
+                    finalThumbPrefix
             );
-            saved.updateThumbnail(request.thumbnailKey());
+            saved.updateThumbnail(finalKey);
         }
 
         // attachments
         List<String> keys = (request.attachmentKeys() == null) ? List.of() : request.attachmentKeys();
         int order = 1;
 
-        for (String key : keys) {
-            if (!StringUtils.hasText(key)) continue;
+        for (String tempKey : keys) {
+            if (!StringUtils.hasText(tempKey)) continue;
 
-            presignEngine.consume(
+            String finalKey = presignEngine.consume(
                     userId,
                     UploadPurpose.PORTFOLIO_ATTACHMENT,
                     UploadRefType.PORTFOLIO,
                     saved.getPortfolioId(),
-                    key
+                    tempKey,
+                    finalAssetPrefix
             );
 
-            String type = ticketRepo.findByStorageKey(key)
-                    .map(UploadTicket::getContentType)
-                    .orElse("");
+            UploadTicket t = ticketRepo.findByStorageKey(finalKey)
+                    .orElseThrow(() -> new CustomException(UserErrorCode.PORTFOLIO_NOT_FOUND));
 
             saved.getAssets().add(PortfolioAsset.builder()
                     .portfolioProject(saved)
-                    .type(type)
-                    .fileUrl(key)
+                    .type(t.getContentType())
+                    .fileUrl(finalKey)
                     .sortOrder(order++)
                     .createdAt(LocalDateTime.now())
                     .build());
@@ -164,6 +158,10 @@ public class PortfolioService {
             throw new CustomException(UserErrorCode.PORTFOLIO_FORBIDDEN);
         }
 
+        String finalThumbPrefix = "portfolio/user-" + userId + "/portfolio-" + project.getPortfolioId() + "/thumbnail";
+        String finalAssetPrefix = "portfolio/user-" + userId + "/portfolio-" + project.getPortfolioId() + "/assets";
+
+
         Set<String> deleteAfterCommit = new HashSet<>();
 
         // thumbnail 교체
@@ -174,15 +172,15 @@ public class PortfolioService {
                 deleteAfterCommit.add(project.getThumbnailUrl());
             }
 
-            presignEngine.consume(
+            String finalKey = presignEngine.consume(
                     userId,
                     UploadPurpose.PORTFOLIO_ATTACHMENT,
                     UploadRefType.PORTFOLIO,
                     project.getPortfolioId(),
-                    request.thumbnailKey()
+                    request.thumbnailKey(),
+                    finalThumbPrefix
             );
-
-            project.updateThumbnail(request.thumbnailKey());
+            project.updateThumbnail(finalKey);
         }
 
         project.updateInfo(
@@ -195,36 +193,57 @@ public class PortfolioService {
 
         // attachments 교체(요청이 들어온 경우만)
         if (request.attachmentKeys() != null) {
-            // 기존 것 삭제 후보로 쌓기
-            project.getAssets().forEach(a -> {
-                if (StringUtils.hasText(a.getFileUrl())) deleteAfterCommit.add(a.getFileUrl());
-            });
-            project.getAssets().clear();
+            Map<String, PortfolioAsset> currentByKey = project.getAssets().stream()
+                    .filter(a -> StringUtils.hasText(a.getFileUrl()))
+                    .collect(Collectors.toMap(PortfolioAsset::getFileUrl, a -> a));
+
+            Set<String> keepKeys = new HashSet<>();
+
+            LinkedHashSet<String> reqKeys = new LinkedHashSet<>();
+            for (String k : request.attachmentKeys()) {
+                if (StringUtils.hasText(k)) reqKeys.add(k);
+            }
 
             int order = 1;
-            for (String key : request.attachmentKeys()) {
-                if (!StringUtils.hasText(key)) continue;
+            for (String k : reqKeys) {
+                PortfolioAsset existing = currentByKey.get(k);
+                if (existing != null) {
+                    existing.updateSortOrder(order++);
+                    keepKeys.add(k);
+                    continue;
+                }
 
-                presignEngine.consume(
+                String finalKey = presignEngine.consume(
                         userId,
                         UploadPurpose.PORTFOLIO_ATTACHMENT,
                         UploadRefType.PORTFOLIO,
                         project.getPortfolioId(),
-                        key
+                        k,
+                        finalAssetPrefix
                 );
 
-                String type = ticketRepo.findByStorageKey(key)
-                        .map(UploadTicket::getContentType)
-                        .orElse("");
+                UploadTicket t = ticketRepo.findByStorageKey(finalKey)
+                        .orElseThrow(() -> new CustomException(UserErrorCode.PORTFOLIO_NOT_FOUND));
 
                 project.getAssets().add(PortfolioAsset.builder()
                         .portfolioProject(project)
-                        .type(type)
-                        .fileUrl(key)
+                        .type(t.getContentType())
+                        .fileUrl(finalKey)
                         .sortOrder(order++)
                         .createdAt(LocalDateTime.now())
                         .build());
+
+                keepKeys.add(finalKey);
             }
+            for (String oldKey : currentByKey.keySet()) {
+                if (!keepKeys.contains(oldKey)) deleteAfterCommit.add(oldKey);
+            }
+
+            project.getAssets().removeIf(a -> {
+                String k = a.getFileUrl();
+                return StringUtils.hasText(k) && !keepKeys.contains(k);
+            });
+
         }
         registerAfterCommitDelete(deleteAfterCommit);
 
