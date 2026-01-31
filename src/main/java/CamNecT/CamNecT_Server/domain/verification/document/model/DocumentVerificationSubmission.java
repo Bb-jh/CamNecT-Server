@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "document_verification_submission",
@@ -49,7 +47,7 @@ public class DocumentVerificationSubmission {
     @Column(name = "storage_key", nullable = false, length = 500)
     private String storageKey;
 
-    @Column(name = "original_filename", nullable = false, length = 255)
+    @Column(name = "original_filename", nullable = false)
     private String originalFilename;
 
     @Column(name = "content_type", nullable = false, length = 100)

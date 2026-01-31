@@ -147,12 +147,17 @@ public class DocumentVerificationService {
     }
 
     @Transactional(readOnly = true)
-    public PresignDownloadResponse myDownloadUrl(Long userId, Long submissionId, Long fileId) {
+    public PresignDownloadResponse myDownloadUrl(Long userId, Long submissionId) {
         DocumentVerificationSubmission r = submissionRepo.findByIdAndUserId(submissionId, userId)
                 .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
 
-        return presignEngine.presignDownload(r.getStorageKey(),
-                safeName(r.getOriginalFilename()), normalize(r.getContentType()));
+        if (!org.springframework.util.StringUtils.hasText(r.getStorageKey())) {
+            throw new CustomException(VerificationErrorCode.FILE_NOT_FOUND);
+        }
+
+        String filename = safeName(r.getOriginalFilename());
+        String ct = normalize(r.getContentType());
+        return presignEngine.presignDownload(r.getStorageKey(), filename, ct);
     }
 
     @Transactional

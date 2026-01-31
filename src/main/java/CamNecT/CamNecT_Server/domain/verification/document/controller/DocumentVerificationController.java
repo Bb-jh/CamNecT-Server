@@ -56,10 +56,9 @@ public class DocumentVerificationController {
     @GetMapping("/{submissionId}/files/{fileId}/download-url")
     public PresignDownloadResponse myDownloadUrl(
             @UserId Long userId,
-            @PathVariable Long submissionId,
-            @PathVariable Long fileId
+            @PathVariable Long submissionId
     ) {
-        return service.myDownloadUrl(userId, submissionId, fileId);
+        return service.myDownloadUrl(userId, submissionId);
     }
 
     @DeleteMapping("/{submissionId}")
