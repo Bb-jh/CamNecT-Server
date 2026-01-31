@@ -36,18 +36,19 @@ public class AdminDocumentVerificationController {
     @PatchMapping("/{submissionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void review(
-            @UserId Long userId, //adminId여야됨.
+            @UserId Long adminId, //adminId여야됨.
             @PathVariable Long submissionId,
             @RequestBody @Validated ReviewDocumentVerificationRequest req
     ) {
-        service.review(userId, submissionId, req);
+        service.review(adminId, submissionId, req);
     }
 
     @GetMapping("/{submissionId}/files/{fileId}/download-url")
     public PresignDownloadResponse downloadUrl(
+            @UserId Long adminId,
             @PathVariable Long submissionId,
             @PathVariable Long fileId
     ) {
-        return service.downloadUrl(submissionId, fileId);
+        return service.downloadUrl(adminId, submissionId, fileId);
     }
 }

@@ -4,6 +4,7 @@ import CamNecT.CamNecT_Server.domain.users.model.UserRole;
 import CamNecT.CamNecT_Server.domain.users.model.UserStatus;
 import CamNecT.CamNecT_Server.domain.users.model.Users;
 import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
+import CamNecT.CamNecT_Server.domain.verification.document.event.DocumentVerificationReviewedEvent;
 import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationFileRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationSubmissionRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.ReviewDocumentVerificationRequest;
@@ -16,6 +17,7 @@ import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.Verific
 import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
 import CamNecT.CamNecT_Server.global.storage.service.PresignEngine;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ public class AdminDocumentVerificationService {
     private final DocumentVerificationFileRepository fileRepo;
     private final UserRepository usersRepository;
     private final PresignEngine presignEngine;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public Page<DocumentVerificationSubmission> list(VerificationStatus status, Pageable pageable) {
@@ -46,9 +49,7 @@ public class AdminDocumentVerificationService {
         DocumentVerificationSubmission s = submissionRepo.findById(submissionId)
                 .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
 
-        Users adminUser = usersRepository.findByUserId(adminId)
-                .orElseThrow(() -> new CustomException(VerificationErrorCode.USER_NOT_FOUND));
-        if(adminUser.getRole() != UserRole.ADMIN){
+        if(!usersRepository.existsByUserIdAndRole(adminId, UserRole.ADMIN)){
             throw new CustomException(UserErrorCode.USER_NOT_ADMIN);
         }
 
@@ -64,6 +65,10 @@ public class AdminDocumentVerificationService {
             if (user.getStatus() != UserStatus.SUSPENDED) {
                 user.changeStatus(UserStatus.ACTIVE);
             }
+
+            eventPublisher.publishEvent(new DocumentVerificationReviewedEvent(
+                    user.getEmail(), s.getDocType(), req.decision(), null
+            ));
             return;
         }
 
@@ -72,10 +77,18 @@ public class AdminDocumentVerificationService {
             throw new CustomException(VerificationErrorCode.REJECT_REASON_REQUIRED);
         }
         s.reject(adminId, reason);
+
+        eventPublisher.publishEvent(new DocumentVerificationReviewedEvent(
+                user.getEmail(), s.getDocType(), req.decision(), reason
+        ));
     }
 
     @Transactional(readOnly = true)
-    public PresignDownloadResponse downloadUrl(Long submissionId, Long fileId) {
+    public PresignDownloadResponse downloadUrl(Long adminId, Long submissionId, Long fileId) {
+        if(!usersRepository.existsByUserIdAndRole(adminId, UserRole.ADMIN)){
+            throw new CustomException(UserErrorCode.USER_NOT_ADMIN);
+        }
+
         DocumentVerificationFile f = fileRepo.findByIdAndSubmission_Id(fileId, submissionId)
                 .orElseThrow(() -> new CustomException(VerificationErrorCode.FILE_NOT_FOUND));
 

@@ -19,6 +19,11 @@ public class AdminRoleInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        // 1) OPTIONS 요청(Preflight)은 통과 (CORS)
+        if (request.getMethod().equals("OPTIONS")) {
+            return true;
+        }
+
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || authHeader.isBlank()) {
             throw new CustomException(ErrorCode.UNAUTHORIZED, new IllegalArgumentException("Authorization 헤더가 존재하지 않습니다."));

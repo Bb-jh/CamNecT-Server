@@ -45,6 +45,9 @@ public class SignupService {
         if (userRepository.existsByUsername(req.username())) {
             throw new CustomException(AuthErrorCode.USERNAME_ALREADY_EXISTS);
         }
+        if (userRepository.existsByPhoneNum(req.phoneNum())) {
+            throw new CustomException(AuthErrorCode.PHONENUM_ALREADY_EXISTS);
+        }
 
         // 3)비밀번호 체크
         validatePassword(req.password());
