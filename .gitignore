@@ -51,6 +51,3 @@ mysql_data/
 ### OS ###
 .DS_Store
 Thumbs.db
-
-# Custom Generated Folders
-src/main/generated/
