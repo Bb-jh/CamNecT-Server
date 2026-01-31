@@ -46,7 +46,6 @@ public class AdminDocumentVerificationService {
         DocumentVerificationSubmission s = submissionRepo.findById(submissionId)
                 .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
 
-        //TODO Admin검증로직 추가
         Users adminUser = usersRepository.findByUserId(adminId)
                 .orElseThrow(() -> new CustomException(VerificationErrorCode.USER_NOT_FOUND));
         if(adminUser.getRole() != UserRole.ADMIN){

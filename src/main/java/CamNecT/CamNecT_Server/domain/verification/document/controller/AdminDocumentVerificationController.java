@@ -36,7 +36,7 @@ public class AdminDocumentVerificationController {
     @PatchMapping("/{submissionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void review(
-            @UserId Long userId,
+            @UserId Long userId, //adminId여야됨.
             @PathVariable Long submissionId,
             @RequestBody @Validated ReviewDocumentVerificationRequest req
     ) {

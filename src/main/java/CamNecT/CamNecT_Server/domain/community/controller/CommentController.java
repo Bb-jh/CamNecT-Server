@@ -5,6 +5,7 @@ import CamNecT.CamNecT_Server.domain.community.dto.request.UpdateCommentRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.response.CreateCommentResponse;
 import CamNecT.CamNecT_Server.domain.community.dto.response.ToggleCommentLikeResponse;
 import CamNecT.CamNecT_Server.domain.community.service.CommentService;
+import CamNecT.CamNecT_Server.global.common.auth.UserId;
 import CamNecT.CamNecT_Server.global.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,7 @@ public class CommentController {
 
     @PostMapping("/posts/{postId}/comments")
     public ApiResponse<CreateCommentResponse> create(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @UserId Long userId,
             @PathVariable Long postId,
             @RequestBody @Valid CreateCommentRequest req
     ) {
@@ -39,7 +40,7 @@ public class CommentController {
 
     @PatchMapping("/comments/{commentId}")
     public ApiResponse<Void> update(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @UserId Long userId,
             @PathVariable Long commentId,
             @RequestBody @Valid UpdateCommentRequest req
     ) {
@@ -49,7 +50,7 @@ public class CommentController {
 
     @DeleteMapping("/comments/{commentId}")
     public ApiResponse<Void> delete(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @UserId Long userId,
             @PathVariable Long commentId
     ) {
         commentService.delete(userId, commentId);
@@ -58,7 +59,7 @@ public class CommentController {
 
     @PostMapping("/comments/{commentId}/likes")
     public ApiResponse<ToggleCommentLikeResponse> toggleCommentLike(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @UserId Long userId,
             @PathVariable Long commentId
     ) {
         return ApiResponse.success(commentService.toggleLike(userId, commentId));

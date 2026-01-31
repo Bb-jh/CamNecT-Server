@@ -15,6 +15,8 @@ import CamNecT.CamNecT_Server.domain.community.repository.Comments.CommentsRepos
 import CamNecT.CamNecT_Server.domain.community.repository.Posts.*;
 import CamNecT.CamNecT_Server.domain.point.model.PointEvent;
 import CamNecT.CamNecT_Server.domain.point.service.PointService;
+import CamNecT.CamNecT_Server.domain.users.model.UserRole;
+import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.AuthErrorCode;
@@ -39,6 +41,7 @@ public class PostServiceImpl implements PostService {
     private final PostStatsRepository postStatsRepository;
     private final PostTagsRepository postTagsRepository;
     private final TagRepository tagRepository;
+    private final UserRepository userRepository;
 
     private final PostLikesRepository postLikesRepository;
     private final AcceptedCommentsRepository acceptedCommentsRepository;
@@ -118,9 +121,10 @@ public class PostServiceImpl implements PostService {
         Posts post = postsRepository.findById(postId)
                 .orElseThrow(() -> new CustomException(CommunityErrorCode.POST_NOT_FOUND));
 
-        if (!Objects.equals(post.getUserId(), userId)) {
+        if(!userRepository.existsByUserIdAndRole(userId, UserRole.ADMIN)
+            || !Objects.equals(post.getUserId(), userId)){
             throw new CustomException(CommunityErrorCode.POST_FORBIDDEN);
-        }
+        } //Admin이거나 작성자면은 스킵
 
         if (post.getBoard().getCode() == BoardCode.QUESTION
                 && acceptedCommentsRepository.existsByPost_Id(postId)) {

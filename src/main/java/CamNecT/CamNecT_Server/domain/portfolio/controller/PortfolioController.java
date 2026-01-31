@@ -42,7 +42,7 @@ public class PortfolioController {
 
     @PostMapping("/uploads/presign/thumbnail")
     public ApiResponse<PresignUploadResponse> presignThumbnail(
-            @RequestHeader Long userId,
+            @UserId Long userId,
             @RequestBody @Valid PresignUploadRequest req
     ) {
         String keyPrefix = "portfolio/user-" + userId + "/thumbnail";
@@ -60,7 +60,7 @@ public class PortfolioController {
 
     @PostMapping("/uploads/presign/asset")
     public ApiResponse<PresignUploadResponse> presignAsset(
-            @RequestHeader Long userId,
+            @UserId Long userId,
             @RequestBody @Valid PresignUploadRequest req
     ) {
         String keyPrefix = "portfolio/user-" + userId + "/assets";
