@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/user/me/certificates")
+@RequestMapping("/api/user/me/certificates")
 @RequiredArgsConstructor
 public class CertificateController {
 

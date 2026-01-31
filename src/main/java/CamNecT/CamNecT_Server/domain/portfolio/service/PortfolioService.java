@@ -294,13 +294,19 @@ public class PortfolioService {
                 @Override
                 public void afterCommit() {
                     for (String key : keys) {
-                        try { fileStorage.delete(key); } catch (Exception ignored) {}
+                        try {
+                            fileStorage.delete(key);
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
             });
         } else {
             for (String key : keys) {
-                try { fileStorage.delete(key); } catch (Exception ignored) {}
+                try {
+                    fileStorage.delete(key);
+                } catch (Exception ignored) {
+                }
             }
         }
     }
