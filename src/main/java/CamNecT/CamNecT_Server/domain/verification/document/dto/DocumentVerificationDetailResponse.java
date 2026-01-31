@@ -4,7 +4,6 @@ import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentType;
 import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationStatus;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 public record DocumentVerificationDetailResponse(
         Long submissionId,
@@ -13,5 +12,5 @@ public record DocumentVerificationDetailResponse(
         LocalDateTime submittedAt,
         LocalDateTime reviewedAt,
         String rejectReason,
-        List<DocumentVerificationFileDto> files
+        DocumentVerificationFileDto file
 ) {}

@@ -3,10 +3,16 @@ package CamNecT.CamNecT_Server.domain.community.controller;
 import CamNecT.CamNecT_Server.domain.community.dto.request.CreatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.request.UpdatePostRequest;
 import CamNecT.CamNecT_Server.domain.community.dto.response.*;
+import CamNecT.CamNecT_Server.domain.community.service.PostAttachmentDownloadService;
+import CamNecT.CamNecT_Server.domain.community.service.PostAttachmentsService;
 import CamNecT.CamNecT_Server.domain.community.service.PostQueryService;
 import CamNecT.CamNecT_Server.domain.community.service.PostQueryService.*;
 import CamNecT.CamNecT_Server.domain.community.service.PostService;
+import CamNecT.CamNecT_Server.global.common.auth.UserId;
 import CamNecT.CamNecT_Server.global.common.response.ApiResponse;
+import CamNecT.CamNecT_Server.global.storage.dto.request.PresignUploadRequest;
+import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
+import CamNecT.CamNecT_Server.global.storage.dto.response.PresignUploadResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -18,10 +24,12 @@ public class PostController {
 
     private final PostService postService;
     private final PostQueryService postQueryService;
+    private final PostAttachmentDownloadService postAttachmentDownloadService;
+    private final PostAttachmentsService postAttachmentsService;
 
     @PostMapping
     public ApiResponse<CreatePostResponse> create(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @UserId Long userId,
             @RequestBody @Valid CreatePostRequest req
     ) {
         return ApiResponse.success(postService.create(userId, req));
@@ -43,7 +51,7 @@ public class PostController {
 
     @PatchMapping("/{postId}")
     public ApiResponse<Void> update(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @UserId Long userId,
             @PathVariable Long postId,
             @RequestBody @Valid UpdatePostRequest req
     ) {
@@ -53,7 +61,7 @@ public class PostController {
 
     @DeleteMapping("/{postId}")
     public ApiResponse<Void> delete(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @UserId Long userId,
             @PathVariable Long postId
     ) {
         postService.delete(userId, postId);
@@ -64,7 +72,7 @@ public class PostController {
 
     @GetMapping("/{postId}")
     public ApiResponse<PostDetailResponse> getDetail(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @UserId Long userId,
             @PathVariable Long postId
     ) {
         return ApiResponse.success(postService.getDetail(userId, postId));
@@ -73,7 +81,7 @@ public class PostController {
     //좋아요
     @PostMapping("/{postId}/likes")
     public ApiResponse<ToggleLikeResponse> toggleLike(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @UserId Long userId,
             @PathVariable Long postId
     ) {
         return ApiResponse.success(postService.toggleLike(userId, postId));
@@ -82,7 +90,7 @@ public class PostController {
     //댓글 채택
     @PostMapping("/{postId}/comments/{commentId}/accept")
     public ApiResponse<Void> accept(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @UserId Long userId,
             @PathVariable Long postId,
             @PathVariable Long commentId
     ) {
@@ -93,7 +101,7 @@ public class PostController {
     //북마크
     @PostMapping("/{postId}/bookmarks")
     public ApiResponse<ToggleBookmarkResponse> toggleBookmark(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @UserId Long userId,
             @PathVariable Long postId
     ) {
         return ApiResponse.success(postService.toggleBookmark(userId, postId));
@@ -102,9 +110,29 @@ public class PostController {
     //글 구매
     @PostMapping("/{postId}/access/purchase")
     public ApiResponse<PurchasePostAccessResponse> purchaseAccess(
-            @RequestHeader("X-User-Id") Long userId,
+            @UserId Long userId,
             @PathVariable Long postId
     ) {
         return ApiResponse.success(postService.purchasePostAccess(userId, postId));
+    }
+
+    @PostMapping("/uploads/presign")
+    public ApiResponse<PresignUploadResponse> presignAttachmentUpload(
+            @UserId Long userId,
+            @RequestBody @Valid PresignUploadRequest req
+    ) {
+        return ApiResponse.success(postAttachmentsService.presign(userId, req));
+    }
+
+    @GetMapping("/{postId}/attachments/{attachmentId}/download-url")
+    public ApiResponse<PresignDownloadResponse> downloadUrl(
+            @UserId Long userId,
+            @PathVariable Long postId,
+            @PathVariable Long attachmentId,
+            @RequestParam(defaultValue = "FILE") PostAttachmentDownloadService.Kind kind
+    ) {
+        return ApiResponse.success(
+                postAttachmentDownloadService.presignDownload(userId, postId, attachmentId, kind)
+        );
     }
 }

@@ -32,4 +32,8 @@ public class PortfolioAsset {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    public void updateSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
+    }
 }
