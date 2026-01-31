@@ -40,6 +40,8 @@ public class PortfolioController {
         return portfolioService.create(userId, portfolioRequest);
     }
 
+    //todo :
+
     @PostMapping("/uploads/presign/thumbnail")
     public ApiResponse<PresignUploadResponse> presignThumbnail(
             @UserId Long userId,
@@ -75,6 +77,5 @@ public class PortfolioController {
                 )
         );
     }
-
 
 }
