@@ -52,12 +52,8 @@ public class DocumentVerificationService {
     public PresignUploadResponse presignUpload(Long userId, PresignUploadRequest req) {
         String ct = normalize(req.contentType());
 
-        if (req.size() <= 0) {
-            throw new CustomException(VerificationErrorCode.EMPTY_FILE_NOT_ALLOWED);
-        }
-        if (req.size() > props.maxFileSizeBytes()) {
-            throw new CustomException(VerificationErrorCode.FILE_TOO_LARGE);
-        }
+        if (req.size() <= 0) throw new CustomException(VerificationErrorCode.EMPTY_FILE_NOT_ALLOWED);
+        if (req.size() > props.maxFileSizeBytes()) throw new CustomException(VerificationErrorCode.FILE_TOO_LARGE);
         if (!StringUtils.hasText(ct) || !props.getAllowedContentTypes().contains(ct)) {
             throw new CustomException(VerificationErrorCode.UNSUPPORTED_CONTENT_TYPE);
         }
@@ -66,9 +62,7 @@ public class DocumentVerificationService {
         long pending = ticketRepo.countByUserIdAndPurposeAndStatus(
                 userId, UploadPurpose.VERIFICATION_DOCUMENT, UploadTicket.Status.PENDING
         );
-        if (pending >= props.getMaxFiles()) {
-            throw new CustomException(VerificationErrorCode.TOO_MANY_FILES);
-        }
+        if (pending >= props.getMaxFiles()) throw new CustomException(VerificationErrorCode.TOO_MANY_FILES);
 
         // prefix는 submissionId 없이도 충분히 안전 (원하면 "verification/user-..../temp"로 유지)
         String keyPrefix = "verification/user-" + userId + "/documents";
@@ -106,34 +100,36 @@ public class DocumentVerificationService {
 
         submissionRepo.save(sub);
 
+        String finalPrefix = "verification/submission-" + sub.getId() + "/documents";
+
         int savedCount = 0;
 
-        for (String key : documentKeys) {
-            if (!StringUtils.hasText(key)) continue;
+        for (String tempKey : documentKeys) {
+            if (savedCount >= props.getMaxFiles()) break;
 
-            // ✅ 티켓 소유/만료/목적 + S3 HEAD 검증까지 여기서 처리됨
-            presignEngine.consume(
+            UploadTicket t = ticketRepo.findByStorageKey(tempKey)
+                    .orElseThrow(() -> new CustomException(VerificationErrorCode.FILE_NOT_FOUND));
+
+
+            String finalKey = presignEngine.consume(
                     userId,
                     UploadPurpose.VERIFICATION_DOCUMENT,
                     UploadRefType.VERIFICATION,
                     sub.getId(),
-                    key
+                    tempKey,
+                    finalPrefix
             );
-
-            UploadTicket t = ticketRepo.findByStorageKey(key)
-                    .orElseThrow(() -> new CustomException(VerificationErrorCode.FILE_NOT_FOUND));
 
             DocumentVerificationFile vf = DocumentVerificationFile.builder()
                     .originalFilename(safeName(t.getOriginalFilename()))
-                    .contentType(t.getContentType())
+                    .contentType(normalize(t.getContentType()))
                     .size(t.getSize())
-                    .storageKey(key)
+                    .storageKey(finalKey)
                     .uploadedAt(LocalDateTime.now())
                     .build();
 
             sub.addFile(vf);
-
-            if (++savedCount >= props.getMaxFiles()) break;
+            savedCount++;
         }
 
         DocumentVerificationSubmission saved = submissionRepo.save(sub);

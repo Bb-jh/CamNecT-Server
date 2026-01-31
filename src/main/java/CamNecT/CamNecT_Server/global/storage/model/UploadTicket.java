@@ -82,4 +82,11 @@ public class UploadTicket {
     public void markExpired() {
         this.status = Status.EXPIRED;
     }
+
+    public void updateStorageKey(String newStorageKey) {
+        if (newStorageKey == null || newStorageKey.isBlank()) {
+            throw new IllegalArgumentException("storageKey cannot be blank");
+        }
+        this.storageKey = newStorageKey;
+    }
 }
