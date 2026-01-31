@@ -4,6 +4,7 @@ import CamNecT.CamNecT_Server.domain.verification.document.dto.ReviewDocumentVer
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationSubmission;
 import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationStatus;
 import CamNecT.CamNecT_Server.domain.verification.document.service.AdminDocumentVerificationService;
+import CamNecT.CamNecT_Server.global.common.auth.UserId;
 import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -35,11 +36,11 @@ public class AdminDocumentVerificationController {
     @PatchMapping("/{submissionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void review(
-            @RequestParam Long adminId,
+            @UserId Long userId,
             @PathVariable Long submissionId,
             @RequestBody @Validated ReviewDocumentVerificationRequest req
     ) {
-        service.review(adminId, submissionId, req);
+        service.review(userId, submissionId, req);
     }
 
     @GetMapping("/{submissionId}/files/{fileId}/download-url")

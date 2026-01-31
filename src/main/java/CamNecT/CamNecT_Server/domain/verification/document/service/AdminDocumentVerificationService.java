@@ -1,5 +1,6 @@
 package CamNecT.CamNecT_Server.domain.verification.document.service;
 
+import CamNecT.CamNecT_Server.domain.users.model.UserRole;
 import CamNecT.CamNecT_Server.domain.users.model.UserStatus;
 import CamNecT.CamNecT_Server.domain.users.model.Users;
 import CamNecT.CamNecT_Server.domain.users.repository.UserRepository;
@@ -10,6 +11,7 @@ import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerific
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationSubmission;
 import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationStatus;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.UserErrorCode;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.VerificationErrorCode;
 import CamNecT.CamNecT_Server.global.storage.dto.response.PresignDownloadResponse;
 import CamNecT.CamNecT_Server.global.storage.service.PresignEngine;
@@ -43,6 +45,13 @@ public class AdminDocumentVerificationService {
     public void review(Long adminId, Long submissionId, ReviewDocumentVerificationRequest req) {
         DocumentVerificationSubmission s = submissionRepo.findById(submissionId)
                 .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
+
+        //TODO Admin검증로직 추가
+        Users adminUser = usersRepository.findByUserId(adminId)
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.USER_NOT_FOUND));
+        if(adminUser.getRole() != UserRole.ADMIN){
+            throw new CustomException(UserErrorCode.USER_NOT_ADMIN);
+        }
 
         if (s.getStatus() != VerificationStatus.PENDING) {
             throw new CustomException(VerificationErrorCode.ONLY_PENDING_CAN_REVIEW);
