@@ -137,8 +137,4 @@ public class PostController {
                 postAttachmentDownloadService.presignDownload(userId, postId, attachmentId, kind)
         );
     }
-
-    private String normalize(String ct) {
-        return (ct == null) ? "" : ct.trim().toLowerCase(Locale.ROOT);
-    }
 }

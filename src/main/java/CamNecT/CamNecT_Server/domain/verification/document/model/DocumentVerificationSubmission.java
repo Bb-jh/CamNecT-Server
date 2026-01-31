@@ -45,16 +45,31 @@ public class DocumentVerificationSubmission {
     @Column(name = "reject_reason", length = 500)
     private String rejectReason;
 
+    // ===== 단일 파일 메타 =====
+    @Column(name = "storage_key", nullable = false, length = 500)
+    private String storageKey;
+
+    @Column(name = "original_filename", nullable = false, length = 255)
+    private String originalFilename;
+
+    @Column(name = "content_type", nullable = false, length = 100)
+    private String contentType;
+
+    @Column(name = "size", nullable = false)
+    private long size;
+
+    @Column(name = "uploaded_at", nullable = false)
+    private LocalDateTime uploadedAt;
+
     @Version
     private Long version;
 
-    @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<DocumentVerificationFile> files = new ArrayList<>();
-
-    public void addFile(DocumentVerificationFile file) {
-        files.add(file);
-        file.setSubmission(this);
+    public void attachFile(String storageKey, String originalFilename, String contentType, long size) {
+        this.storageKey = storageKey;
+        this.originalFilename = originalFilename;
+        this.contentType = contentType;
+        this.size = size;
+        this.uploadedAt = LocalDateTime.now();
     }
 
     public void cancel() {

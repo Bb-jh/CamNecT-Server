@@ -23,11 +23,16 @@ import CamNecT.CamNecT_Server.global.storage.dto.request.PresignUploadRequest;
 import CamNecT.CamNecT_Server.global.storage.dto.response.PresignUploadResponse;
 import CamNecT.CamNecT_Server.global.storage.model.UploadPurpose;
 import CamNecT.CamNecT_Server.global.storage.model.UploadRefType;
+import CamNecT.CamNecT_Server.global.storage.service.DownloadUrlIssuer;
+import CamNecT.CamNecT_Server.global.storage.service.FileStorage;
 import CamNecT.CamNecT_Server.global.storage.service.PresignEngine;
 import CamNecT.CamNecT_Server.global.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Locale;
@@ -46,12 +51,18 @@ public class ProfileService {
     private final EducationRepository educationRepository;
     private final TagRepository tagRepository;
     private final PresignEngine presignEngine;
+    private final FileStorage fileStorage;
+    private final DownloadUrlIssuer downloadUrlIssuer;
 
     @Transactional(readOnly = true)
     public ProfileResponse getUserProfile(Long profileUserId) {
 
-        Users user = userRepository.findByUserId(profileUserId).orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
-        UserProfile userProfile = userProfileRepository.findByUserId(profileUserId).orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+        Users user = userRepository.findByUserId(profileUserId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+        UserProfile userProfile = userProfileRepository.findByUserId(profileUserId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND));
+
+        String profileImageUrl = downloadUrlIssuer.issueDisplayUrl(userProfile.getProfileImageUrl());
 
         int following = userFollowRepository.countByFollowingId(profileUserId);
         int follower = userFollowRepository.countByFollowerId(profileUserId);
@@ -76,7 +87,7 @@ public class ProfileService {
         ProfileResponse.ProfileBasicsDto basicProfile = new ProfileResponse.ProfileBasicsDto(
                 userProfile.getBio(),
                 userProfile.getOpenToCoffeeChat(),
-                userProfile.getProfileImageUrl(),
+                profileImageUrl,
                 userProfile.getStudentNo(),
                 userProfile.getYearLevel(),
                 userProfile.getInstitutionId(),
@@ -101,16 +112,27 @@ public class ProfileService {
     }
 
     @Transactional
-    public ProfileStatusResponse updateOnboarding(Long userId, UpdateOnboardingRequest req) {
+    public ProfileStatusResponse createOnboarding(Long userId, UpdateOnboardingRequest req) {
 
         Users user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
         requireEmailVerifiedAndNotSuspended(user);
 
-        // 1) 프로필 기본(bio, image)
-        UserProfile userProfile = userProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new CustomException(UserErrorCode.USER_PROFILE_NOT_FOUND));
+        UserProfile userProfile = UserProfile.builder()
+                .userId(userId)
+                .user(user)
+                .bio(null)
+                .profileImageUrl(null)
+                .openToCoffeeChat(false)
+                .studentNo("TEMP")
+                .yearLevel(1)
+                .institutionId(1L)
+                .majorId(1L)
+                .build();
+
+        userProfileRepository.save(userProfile);
+
 
         // 2) 프로필 이미지 key 처리 (presign temp -> final 승격)
         String finalProfileImageKey = null;
@@ -214,8 +236,29 @@ public class ProfileService {
         }
     }
 
+    private void deleteAfterCommit(String storageKey) {
+        if (!StringUtils.hasText(storageKey)) return;
+
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try { fileStorage.delete(storageKey); } catch (Exception ignored) {}
+                }
+            });
+        } else {
+            try { fileStorage.delete(storageKey); } catch (Exception ignored) {}
+        }
+    }
+
     private String normalize(String ct) {
         return (ct == null) ? "" : ct.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String trimToNull(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        return t.isBlank() ? null : t;
     }
 
 

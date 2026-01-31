@@ -52,4 +52,11 @@ public class UserProfile {
             this.profileImageUrl = u.isBlank() ? null : u;
         }
     }
+
+    public void applyVerifiedInfo(String studentNo, Integer yearLevel, Long institutionId, Long majorId) {
+        this.studentNo = studentNo;
+        this.yearLevel = yearLevel;
+        this.institutionId = institutionId;
+        this.majorId = majorId;
+    }
 }

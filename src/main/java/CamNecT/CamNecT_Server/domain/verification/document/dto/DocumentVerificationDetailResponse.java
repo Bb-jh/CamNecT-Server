@@ -13,5 +13,5 @@ public record DocumentVerificationDetailResponse(
         LocalDateTime submittedAt,
         LocalDateTime reviewedAt,
         String rejectReason,
-        List<DocumentVerificationFileDto> files
+        DocumentVerificationFileDto file
 ) {}

@@ -37,7 +37,7 @@ public class DocumentVerificationController {
             @UserId Long userId,
             @RequestBody @Valid SubmitDocumentVerificationRequest req
     ) {
-        return service.submit(userId, req.docType(), req.documentKeys());
+        return service.submit(userId, req.docType(), req.documentKey());
     }
 
     @GetMapping("/me")
@@ -54,12 +54,12 @@ public class DocumentVerificationController {
     }
 
     @GetMapping("/{submissionId}/files/{fileId}/download-url")
-    public PresignDownloadResponse myFileDownloadUrl(
+    public PresignDownloadResponse myDownloadUrl(
             @UserId Long userId,
             @PathVariable Long submissionId,
             @PathVariable Long fileId
     ) {
-        return service.myFileDownloadUrl(userId, submissionId, fileId);
+        return service.myDownloadUrl(userId, submissionId, fileId);
     }
 
     @DeleteMapping("/{submissionId}")

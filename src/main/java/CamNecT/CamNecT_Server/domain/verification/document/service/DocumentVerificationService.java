@@ -1,6 +1,5 @@
 package CamNecT.CamNecT_Server.domain.verification.document.service;
 
-import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationFileRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.repository.DocumentVerificationSubmissionRepository;
 import CamNecT.CamNecT_Server.domain.verification.document.config.DocumentVerificationProperties;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.DocumentVerificationDetailResponse;
@@ -8,7 +7,6 @@ import CamNecT.CamNecT_Server.domain.verification.document.dto.DocumentVerificat
 import CamNecT.CamNecT_Server.domain.verification.document.dto.DocumentVerificationListItemResponse;
 import CamNecT.CamNecT_Server.domain.verification.document.dto.SubmitDocumentVerificationResponse;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentType;
-import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationFile;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentVerificationSubmission;
 import CamNecT.CamNecT_Server.domain.verification.document.model.VerificationStatus;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
@@ -30,10 +28,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -42,12 +38,12 @@ public class DocumentVerificationService {
     private final DocumentVerificationProperties props;
 
     private final DocumentVerificationSubmissionRepository submissionRepo;
-    private final DocumentVerificationFileRepository fileRepo;
 
     private final PresignEngine presignEngine;
     private final UploadTicketRepository ticketRepo;
     private final FileStorage fileStorage;
 
+    // ===== presign upload =====
     @Transactional
     public PresignUploadResponse presignUpload(Long userId, PresignUploadRequest req) {
         String ct = normalize(req.contentType());
@@ -58,13 +54,11 @@ public class DocumentVerificationService {
             throw new CustomException(VerificationErrorCode.UNSUPPORTED_CONTENT_TYPE);
         }
 
-        // 유저당 3개 제한(발급 단계에서 1차 방어)
         long pending = ticketRepo.countByUserIdAndPurposeAndStatus(
                 userId, UploadPurpose.VERIFICATION_DOCUMENT, UploadTicket.Status.PENDING
         );
-        if (pending >= props.getMaxFiles()) throw new CustomException(VerificationErrorCode.TOO_MANY_FILES);
+        if (pending >= 1) throw new CustomException(VerificationErrorCode.TOO_MANY_FILES);
 
-        // prefix는 submissionId 없이도 충분히 안전 (원하면 "verification/user-..../temp"로 유지)
         String keyPrefix = "verification/user-" + userId + "/documents";
 
         return presignEngine.issueUpload(
@@ -77,19 +71,20 @@ public class DocumentVerificationService {
         );
     }
 
+    // ===== submit (단일 key) =====
     @Transactional
-    public SubmitDocumentVerificationResponse submit(Long userId, DocumentType docType, List<String> documentKeys) {
+    public SubmitDocumentVerificationResponse submit(Long userId, DocumentType docType, String documentKey) {
 
-        if (documentKeys == null || documentKeys.isEmpty()) {
+        if (!StringUtils.hasText(documentKey)) {
             throw new CustomException(VerificationErrorCode.DOCUMENTS_REQUIRED);
-        }
-        if (documentKeys.size() > props.getMaxFiles()) {
-            throw new CustomException(VerificationErrorCode.TOO_MANY_FILES);
         }
 
         if (submissionRepo.existsByUserIdAndStatus(userId, VerificationStatus.PENDING)) {
             throw new CustomException(VerificationErrorCode.PENDING_ALREADY_EXISTS);
         }
+
+        UploadTicket t = ticketRepo.findByStorageKey(documentKey)
+                .orElseThrow(() -> new CustomException(VerificationErrorCode.FILE_NOT_FOUND));
 
         DocumentVerificationSubmission sub = DocumentVerificationSubmission.builder()
                 .userId(userId)
@@ -102,37 +97,24 @@ public class DocumentVerificationService {
 
         String finalPrefix = "verification/submission-" + sub.getId() + "/documents";
 
-        int savedCount = 0;
+        String finalKey = presignEngine.consume(
+                userId,
+                UploadPurpose.VERIFICATION_DOCUMENT,
+                UploadRefType.VERIFICATION,
+                sub.getId(),
+                documentKey,
+                finalPrefix
+        );
 
-        for (String tempKey : documentKeys) {
-            if (savedCount >= props.getMaxFiles()) break;
-
-            UploadTicket t = ticketRepo.findByStorageKey(tempKey)
-                    .orElseThrow(() -> new CustomException(VerificationErrorCode.FILE_NOT_FOUND));
-
-
-            String finalKey = presignEngine.consume(
-                    userId,
-                    UploadPurpose.VERIFICATION_DOCUMENT,
-                    UploadRefType.VERIFICATION,
-                    sub.getId(),
-                    tempKey,
-                    finalPrefix
-            );
-
-            DocumentVerificationFile vf = DocumentVerificationFile.builder()
-                    .originalFilename(safeName(t.getOriginalFilename()))
-                    .contentType(normalize(t.getContentType()))
-                    .size(t.getSize())
-                    .storageKey(finalKey)
-                    .uploadedAt(LocalDateTime.now())
-                    .build();
-
-            sub.addFile(vf);
-            savedCount++;
-        }
+        sub.attachFile(
+                finalKey,
+                safeName(t.getOriginalFilename()),
+                normalize(t.getContentType()),
+                t.getSize()
+        );
 
         DocumentVerificationSubmission saved = submissionRepo.save(sub);
+
         return new SubmitDocumentVerificationResponse(saved.getId(), saved.getStatus(), saved.getSubmittedAt());
     }
 
@@ -150,29 +132,27 @@ public class DocumentVerificationService {
         DocumentVerificationSubmission r = submissionRepo.findByIdAndUserId(submissionId, userId)
                 .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
 
-        var files = r.getFiles().stream()
-                .map(f -> new DocumentVerificationFileDto(f.getId(), f.getOriginalFilename(), f.getContentType(), f.getSize()))
-                .toList();
+        var file = new DocumentVerificationFileDto(
+                r.getOriginalFilename(),
+                r.getContentType(),
+                r.getSize(),
+                r.getStorageKey()
+        );
 
         return new DocumentVerificationDetailResponse(
-                r.getId(), r.getDocType(), r.getStatus(), r.getSubmittedAt(), r.getReviewedAt(), r.getRejectReason(), files
+                r.getId(), r.getDocType(), r.getStatus(),
+                r.getSubmittedAt(), r.getReviewedAt(), r.getRejectReason(),
+                file
         );
     }
 
     @Transactional(readOnly = true)
-    public PresignDownloadResponse myFileDownloadUrl(Long userId, Long submissionId, Long fileId) {
-
-        // 소유 검증 (submission)
-        submissionRepo.findByIdAndUserId(submissionId, userId)
+    public PresignDownloadResponse myDownloadUrl(Long userId, Long submissionId, Long fileId) {
+        DocumentVerificationSubmission r = submissionRepo.findByIdAndUserId(submissionId, userId)
                 .orElseThrow(() -> new CustomException(VerificationErrorCode.SUBMISSION_NOT_FOUND));
 
-        DocumentVerificationFile f = fileRepo.findByIdAndSubmission_Id(fileId, submissionId)
-                .orElseThrow(() -> new CustomException(VerificationErrorCode.FILE_NOT_FOUND));
-
-        String filename = safeName(f.getOriginalFilename());
-        String ct = normalize(f.getContentType());
-
-        return presignEngine.presignDownload(f.getStorageKey(), filename, ct);
+        return presignEngine.presignDownload(r.getStorageKey(),
+                safeName(r.getOriginalFilename()), normalize(r.getContentType()));
     }
 
     @Transactional
@@ -184,32 +164,24 @@ public class DocumentVerificationService {
             throw new CustomException(VerificationErrorCode.ONLY_PENDING_CAN_REVIEW);
         }
 
-        Set<String> keys = new HashSet<>();
-        r.getFiles().forEach(f -> {
-            if (StringUtils.hasText(f.getStorageKey())) keys.add(f.getStorageKey());
-        });
-
+        String key = r.getStorageKey();
         r.cancel();
 
-        registerAfterCommitDelete(keys);
+        if (StringUtils.hasText(key)) {
+            deleteAfterCommit(key);
+        }
     }
 
-    private void registerAfterCommitDelete(Set<String> keys) {
-        if (keys == null || keys.isEmpty()) return;
-
+    private void deleteAfterCommit(String key) {
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    for (String key : keys) {
-                        try { fileStorage.delete(key); } catch (Exception ignored) {}
-                    }
+                    try { fileStorage.delete(key); } catch (Exception ignored) {}
                 }
             });
         } else {
-            for (String key : keys) {
-                try { fileStorage.delete(key); } catch (Exception ignored) {}
-            }
+            try { fileStorage.delete(key); } catch (Exception ignored) {}
         }
     }
 

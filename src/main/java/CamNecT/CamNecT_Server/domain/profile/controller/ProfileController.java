@@ -10,6 +10,7 @@ import CamNecT.CamNecT_Server.global.storage.dto.request.PresignUploadRequest;
 import CamNecT.CamNecT_Server.global.storage.dto.response.PresignUploadResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -32,12 +33,13 @@ public class ProfileController {
         return profileService.presignProfileImageUpload(userId, req);
     }
 
-    @PatchMapping("/onboarding")
-    public ProfileStatusResponse updateOnboarding(
+    @PostMapping("/onboarding")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProfileStatusResponse createOnboarding(
             @UserId Long userId,
             @RequestBody @Valid UpdateOnboardingRequest req
     ) {
-        return profileService.updateOnboarding(userId, req);
+        return profileService.createOnboarding(userId, req);
     }
 
     @PutMapping("/tags")

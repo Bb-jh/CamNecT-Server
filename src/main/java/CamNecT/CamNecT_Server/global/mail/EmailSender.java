@@ -1,6 +1,6 @@
 package CamNecT.CamNecT_Server.global.mail;
 
-import CamNecT.CamNecT_Server.domain.verification.document.dto.ReviewDocumentVerificationRequest;
+import CamNecT.CamNecT_Server.domain.verification.document.dto.AdminReviewDocumentVerificationRequest;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentType;
 
 public interface EmailSender {
@@ -8,6 +8,6 @@ public interface EmailSender {
 
     void sendDocumentVerificationResult(String toEmail,
                                         DocumentType docType,
-                                        ReviewDocumentVerificationRequest.Decision decision,
+                                        AdminReviewDocumentVerificationRequest.Decision decision,
                                         String reason);
 }

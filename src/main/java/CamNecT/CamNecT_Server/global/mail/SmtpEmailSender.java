@@ -1,6 +1,6 @@
 package CamNecT.CamNecT_Server.global.mail;
 
-import CamNecT.CamNecT_Server.domain.verification.document.dto.ReviewDocumentVerificationRequest;
+import CamNecT.CamNecT_Server.domain.verification.document.dto.AdminReviewDocumentVerificationRequest;
 import CamNecT.CamNecT_Server.domain.verification.document.model.DocumentType;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
@@ -80,7 +80,7 @@ public class SmtpEmailSender implements EmailSender {
     @Override
     public void sendDocumentVerificationResult(String toEmail,
                                         DocumentType docType,
-                                        ReviewDocumentVerificationRequest.Decision decision,
+                                        AdminReviewDocumentVerificationRequest.Decision decision,
                                         String reason) {
         try {
             var mimeMessage = mailSender.createMimeMessage();
@@ -102,7 +102,7 @@ public class SmtpEmailSender implements EmailSender {
                 case GRADUATION_CERTIFICATE -> "졸업증명서";
             };
 
-            boolean approved = (decision == ReviewDocumentVerificationRequest.Decision.APPROVE);
+            boolean approved = (decision == AdminReviewDocumentVerificationRequest.Decision.APPROVE);
             String safeReason = (reason == null) ? "" : reason.trim();
 
             String subjectFinal = approved
