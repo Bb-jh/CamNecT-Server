@@ -26,6 +26,8 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
             "WHERE utm.tagId IN :tagIds")
     Page<UserProfile> findByAnyTagIds(@Param("tagIds") List<Long> tagIds, Pageable pageable);
 
+    @Query("SELECT up FROM UserProfile up JOIN FETCH up.user WHERE up.userId = :userId")
+    Optional<UserProfile> findByUserIdWithUser(Long userId);
 
     @Query("""
         SELECT up FROM UserProfile up
