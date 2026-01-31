@@ -8,8 +8,8 @@ import CamNecT.CamNecT_Server.domain.experience.dto.response.ExperienceResponse;
 import CamNecT.CamNecT_Server.domain.experience.repository.ExperienceRepository;
 import CamNecT.CamNecT_Server.domain.portfolio.dto.response.PortfolioPreviewResponse;
 import CamNecT.CamNecT_Server.domain.portfolio.repository.PortfolioRepository;
+import CamNecT.CamNecT_Server.domain.profile.dto.request.UpdateOnboardingRequest;
 import CamNecT.CamNecT_Server.domain.profile.dto.request.UpdateProfileTagsRequest;
-import CamNecT.CamNecT_Server.domain.profile.dto.request.UpdateProfileBasicsRequest;
 import CamNecT.CamNecT_Server.domain.profile.dto.response.ProfileStatusResponse;
 import CamNecT.CamNecT_Server.domain.profile.dto.response.ProfileResponse;
 import CamNecT.CamNecT_Server.domain.users.model.*;
@@ -17,14 +17,20 @@ import CamNecT.CamNecT_Server.domain.users.repository.*;
 import CamNecT.CamNecT_Server.global.common.exception.CustomException;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.ErrorCode;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.AuthErrorCode;
+import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.StorageErrorCode;
 import CamNecT.CamNecT_Server.global.common.response.errorcode.bydomains.UserErrorCode;
-import CamNecT.CamNecT_Server.global.tag.model.Tag;
+import CamNecT.CamNecT_Server.global.storage.dto.request.PresignUploadRequest;
+import CamNecT.CamNecT_Server.global.storage.dto.response.PresignUploadResponse;
+import CamNecT.CamNecT_Server.global.storage.model.UploadPurpose;
+import CamNecT.CamNecT_Server.global.storage.model.UploadRefType;
+import CamNecT.CamNecT_Server.global.storage.service.PresignEngine;
 import CamNecT.CamNecT_Server.global.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +45,7 @@ public class ProfileService {
     private final UserTagMapRepository userTagMapRepository;
     private final EducationRepository educationRepository;
     private final TagRepository tagRepository;
+    private final PresignEngine presignEngine;
 
     @Transactional(readOnly = true)
     public ProfileResponse getUserProfile(Long profileUserId) {
@@ -62,42 +69,89 @@ public class ProfileService {
                 .map(CertificateResponse::from)
                 .toList();
 
-        List<Tag> tagList = userTagMapRepository.findAllTagsByUserId(profileUserId);
+        List<ProfileResponse.TagDto> tags = userTagMapRepository.findAllTagsByUserId(profileUserId).stream()
+                .map(t -> new ProfileResponse.TagDto(t.getId(), t.getName(), t.getCategory(), t.getAttribute().getName()))
+                .toList();
+
+        ProfileResponse.ProfileBasicsDto basicProfile = new ProfileResponse.ProfileBasicsDto(
+                userProfile.getBio(),
+                userProfile.getOpenToCoffeeChat(),
+                userProfile.getProfileImageUrl(),
+                userProfile.getStudentNo(),
+                userProfile.getYearLevel(),
+                userProfile.getInstitutionId(),
+                userProfile.getMajorId()
+        );
 
         //Boolean isFollowing = userFollowRepository.existsByFollowerIdAndFollowingId(userId, profileUserId);
 
         return new ProfileResponse(
+                user.getUserId(),
                 user.getName(),
-                userProfile,
+                basicProfile,
                 following,
                 follower,
                 portfolioPreviewResponses,
                 educationResponses,
                 experienceList,
                 certificateList,
-                tagList
+                tags
                 //isFollowing
         );
     }
 
-    // =========================================================
-    // 프로필이미지, 메모 등 저장
-    // =========================================================
     @Transactional
-    public ProfileStatusResponse updateBasicsSettings(Long userId, UpdateProfileBasicsRequest req) {
+    public ProfileStatusResponse updateOnboarding(Long userId, UpdateOnboardingRequest req) {
 
         Users user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
-        requireOnboardingPending(user);
+        requireEmailVerifiedAndNotSuspended(user);
 
+        // 1) 프로필 기본(bio, image)
         UserProfile userProfile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(UserErrorCode.USER_PROFILE_NOT_FOUND));
 
-        userProfile.updateOnboardingProfile(req.bio(), req.profileImageUrl());
+        // 2) 프로필 이미지 key 처리 (presign temp -> final 승격)
+        String finalProfileImageKey = null;
+        if (req.profileImageKey() != null && !req.profileImageKey().isBlank()) {
+
+            String finalPrefix = "profile/user-" + userId + "/images"; // final 위치(원하는 대로)
+            finalProfileImageKey = presignEngine.consume(
+                    userId,
+                    UploadPurpose.PROFILE_IMAGE,
+                    UploadRefType.USER_PROFILE,
+                    userId, // refId는 userId로 두면 깔끔
+                    req.profileImageKey(), // tempKey
+                    finalPrefix
+            );
+        }
+
+        userProfile.updateOnboardingProfile(req.bio(), finalProfileImageKey);
+
+        // 3) 태그 replace
+        List<Long> tagIds = (req.tagIds() == null) ? List.of() : req.tagIds().stream().distinct().toList();
+
+        if (!tagIds.isEmpty()) {
+            var tags = tagRepository.findAllById(tagIds);
+            if (tags.size() != tagIds.size()) {
+                throw new CustomException(UserErrorCode.INVALID_TAG_IDS);
+            }
+        }
+
+        userTagMapRepository.deleteAllByUserId(userId);
+
+        if (!tagIds.isEmpty()) {
+            userTagMapRepository.saveAll(
+                    tagIds.stream()
+                            .map(tid -> UserTagMap.builder().userId(userId).tagId(tid).build())
+                            .toList()
+            );
+        }
 
         return new ProfileStatusResponse(user.getStatus());
     }
+
 
     // =========================================================
     // 분야별 태그(관심분야 태그) 선택
@@ -108,7 +162,7 @@ public class ProfileService {
         Users user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
 
-        requireOnboardingPending(user);
+        requireEmailVerifiedAndNotSuspended(user);
 
         List<Long> tagIds = (req.tagIds() == null) ? List.of() : req.tagIds().stream().distinct().toList();
 
@@ -130,13 +184,38 @@ public class ProfileService {
         return new ProfileStatusResponse(user.getStatus());
     }
 
-    private void requireOnboardingPending(Users user) {
+    public PresignUploadResponse presignProfileImageUpload(Long userId, PresignUploadRequest req) {
+        Users user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new CustomException(UserErrorCode.USER_NOT_FOUND));
+        requireEmailVerifiedAndNotSuspended(user);
+
+        String ct = normalize(req.contentType());
+        if (req.size() == null || req.size() <= 0) {
+            throw new CustomException(StorageErrorCode.STORAGE_EMPTY_FILE);
+        }
+
+        String keyPrefix = "profile/user-" + userId + "/images";
+        return presignEngine.issueUpload(
+                userId,
+                UploadPurpose.PROFILE_IMAGE,
+                keyPrefix,
+                ct,
+                req.size(),
+                req.originalFilename()
+        );
+    }
+
+    private void requireEmailVerifiedAndNotSuspended(Users user) {
         if (user.getStatus() == UserStatus.SUSPENDED) {
             throw new CustomException(UserErrorCode.USER_SUSPENDED);
         }
         if (user.getStatus() == UserStatus.EMAIL_PENDING) {
             throw new CustomException(AuthErrorCode.EMAIL_NOT_VERIFIED);
         }
+    }
+
+    private String normalize(String ct) {
+        return (ct == null) ? "" : ct.trim().toLowerCase(Locale.ROOT);
     }
 
 
