@@ -13,6 +13,8 @@ import CamNecT.CamNecT_Server.global.storage.repository.UploadTicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
@@ -39,6 +41,8 @@ public class PresignEngine {
     private final PresignProps presignProps;
     private final UploadTicketRepository ticketRepo;
 
+    private static final String TEMP_ROOT = "temp";
+
     private static final Map<String, String> EXT_BY_CONTENT_TYPE = Map.of(
             "application/pdf", ".pdf",
             "image/jpeg", ".jpg",
@@ -53,10 +57,13 @@ public class PresignEngine {
                                              long size,
                                              String originalFilename) {
 
+
         String ct = normalize(contentType);
         String ext = EXT_BY_CONTENT_TYPE.getOrDefault(ct, "");
 
-        String key = buildKey(keyPrefix, UUID.randomUUID() + ext);
+        String tempPrefix = toTempPrefix(keyPrefix); // 첫 업로드는 무조건 temp로 강제
+
+        String key = buildKey(tempPrefix, UUID.randomUUID() + ext);
         LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(presignProps.uploadExpirationSeconds());
 
         UploadTicket ticket = UploadTicket.builder()
@@ -93,36 +100,34 @@ public class PresignEngine {
         );
     }
 
+    /**
+     * 검증 + temp->final copy + 커밋/롤백 훅 + USED 처리
+     * @return finalKey (DB에는 이걸 저장)
+     */
     @Transactional
-    public void consume(Long userId,
-                        UploadPurpose purpose,
-                        UploadRefType refType,
-                        Long refId,
-                        String storageKey) {
+    public String consume(Long userId,
+                          UploadPurpose purpose,
+                          UploadRefType refType,
+                          Long refId,
+                          String tempKey,
+                          String finalKeyPrefix) {
 
-        if (!StringUtils.hasText(storageKey)) {
-            throw new CustomException(StorageErrorCode.STORAGE_KEY_REQUIRED);
-        }
+        // 1) 티켓/소유/만료/목적 검증 + HEAD 검증
+        if (!StringUtils.hasText(tempKey)) throw new CustomException(StorageErrorCode.STORAGE_KEY_REQUIRED);
+        if (!StringUtils.hasText(finalKeyPrefix)) throw new CustomException(StorageErrorCode.STORAGE_KEY_REQUIRED);
 
-        UploadTicket t = ticketRepo.findByStorageKey(storageKey)
+        UploadTicket t = ticketRepo.findByStorageKey(tempKey)
                 .orElseThrow(() -> new CustomException(StorageErrorCode.UPLOAD_TICKET_NOT_FOUND));
 
-        if (!Objects.equals(t.getUserId(), userId)) {
-            throw new CustomException(StorageErrorCode.UPLOAD_TICKET_FORBIDDEN);
-        }
-        if (t.getPurpose() != purpose) {
-            throw new CustomException(StorageErrorCode.UPLOAD_TICKET_FORBIDDEN);
-        }
-        if (!t.isUsable(LocalDateTime.now())) {
-            throw new CustomException(StorageErrorCode.UPLOAD_TICKET_EXPIRED_OR_USED);
-        }
+        if (!Objects.equals(t.getUserId(), userId)) throw new CustomException(StorageErrorCode.UPLOAD_TICKET_FORBIDDEN);
+        if (t.getPurpose() != purpose) throw new CustomException(StorageErrorCode.UPLOAD_TICKET_FORBIDDEN);
+        if (!t.isUsable(LocalDateTime.now())) throw new CustomException(StorageErrorCode.UPLOAD_TICKET_EXPIRED_OR_USED);
 
-        // 실제 S3에 올라갔는지 + size/type 일치 HEAD 검증
         HeadObjectResponse head;
         try {
             head = s3.headObject(HeadObjectRequest.builder()
                     .bucket(s3Props.bucket())
-                    .key(storageKey)
+                    .key(tempKey)
                     .build());
         } catch (NoSuchKeyException e) {
             throw new CustomException(StorageErrorCode.STORAGE_NOT_FOUND);
@@ -139,7 +144,35 @@ public class PresignEngine {
             throw new CustomException(StorageErrorCode.UPLOAD_TICKET_MISMATCHED_OBJECT);
         }
 
+        String filename = lastSegment(tempKey);
+        String finalKey = buildKey(finalKeyPrefix, filename);
+
+        // 2) temp -> final COPY (이 단계에서 temp는 아직 지우지 않음)
+        if (!finalKey.equals(tempKey)) {
+            try {
+                CopyObjectRequest copyReq = CopyObjectRequest.builder()
+                        .sourceBucket(s3Props.bucket())
+                        .sourceKey(tempKey)
+                        .destinationBucket(s3Props.bucket())
+                        .destinationKey(finalKey)
+                        .build();
+
+                s3.copyObject(copyReq);
+            } catch (S3Exception e) {
+                throw new CustomException(StorageErrorCode.STORAGE_MOVE_FAILED, e);
+            }
+
+            // 3) 트랜잭션 결과에 따라 cleanup
+            registerTxCleanup(tempKey, finalKey);
+
+            // 4) 티켓의 storageKey를 final로 갱신
+            t.updateStorageKey(finalKey);
+        }
+
+        // 5) USED 처리
         t.markUsed(refType, refId);
+
+        return finalKey;
     }
 
     @Transactional(readOnly = true)
@@ -149,9 +182,8 @@ public class PresignEngine {
             throw new CustomException(StorageErrorCode.STORAGE_KEY_REQUIRED);
         }
 
-        // (선택이지만 권장) 존재 여부 확인
         try {
-            HeadObjectResponse head = s3.headObject(HeadObjectRequest.builder()
+            s3.headObject(HeadObjectRequest.builder()
                     .bucket(s3Props.bucket())
                     .key(storageKey)
                     .build());
@@ -183,14 +215,54 @@ public class PresignEngine {
                 .build();
 
         String url = presigner.presignGetObject(presignReq).url().toString();
-
         return new PresignDownloadResponse(url, expiresAt, storageKey);
+    }
+
+    private void registerTxCleanup(String tempKey, String finalKey) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        s3.deleteObject(DeleteObjectRequest.builder()
+                                .bucket(s3Props.bucket())
+                                .key(tempKey)
+                                .build());
+                    } catch (Exception ignored) {}
+                }
+
+                @Override
+                public void afterCompletion(int status) {
+                    if (status != STATUS_COMMITTED) {
+                        try {
+                            s3.deleteObject(DeleteObjectRequest.builder()
+                                    .bucket(s3Props.bucket())
+                                    .key(finalKey)
+                                    .build());
+                        } catch (Exception ignored) {}
+                    }
+                }
+            });
+        }
+    }
+
+
+    private String toTempPrefix(String keyPrefix) {
+        String p = trimSlashes(keyPrefix);
+        if (p.startsWith(TEMP_ROOT + "/")) return p;
+        return TEMP_ROOT + "/" + p;
     }
 
     private String buildKey(String mid, String filename) {
         String base = trimSlashes(s3Props.prefix());
         String m = trimSlashes(mid);
         return (base + "/" + m + "/" + filename).replaceAll("/+", "/");
+    }
+
+    private String lastSegment(String key) {
+        String k = trimSlashes(key);
+        int idx = k.lastIndexOf('/');
+        return (idx >= 0) ? k.substring(idx + 1) : k;
     }
 
     private String trimSlashes(String s) {

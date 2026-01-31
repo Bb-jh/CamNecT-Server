@@ -22,6 +22,7 @@ public enum StorageErrorCode implements BaseErrorCode {
     UPLOAD_TICKET_EXPIRED_OR_USED(HttpStatus.BAD_REQUEST, 49010, "업로드 티켓이 만료되었거나 이미 사용되었습니다."),
     UPLOAD_TICKET_MISMATCHED_OBJECT(HttpStatus.BAD_REQUEST, 49011, "업로드된 파일 정보가 티켓 정보와 일치하지 않습니다."),
 
+    EMPTY_FILE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, 49020, "빈 파일은 업로드가 허가되지 않습니다."),
     // 491xx - 인증/토큰
 
 
@@ -35,7 +36,8 @@ public enum StorageErrorCode implements BaseErrorCode {
     // 499xx - 충돌
     STORAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 49901, "파일 업로드에 실패했습니다."),
     STORAGE_DOWNLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 49902, "파일 다운로드에 실패했습니다."),
-    STORAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 49903, "파일 삭제에 실패했습니다.");
+    STORAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 49903, "파일 삭제에 실패했습니다."),
+    STORAGE_MOVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 49904, "파일 이동에 실패했습니다.");
 
 
     private final HttpStatus httpStatus;
