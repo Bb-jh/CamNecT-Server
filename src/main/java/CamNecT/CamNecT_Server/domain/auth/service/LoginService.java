@@ -27,7 +27,7 @@ public class LoginService {
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest req) {
         Users user = userRepository.findByUsername(req.username())
-                .orElseThrow(() -> new CustomException(AuthErrorCode.INVALID_CREDENTIALS));
+                .orElseThrow(() -> new CustomException(AuthErrorCode.USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(req.password(), user.getPasswordHash())) {
             throw new CustomException(AuthErrorCode.INVALID_CREDENTIALS);
